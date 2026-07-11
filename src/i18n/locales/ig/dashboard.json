@@ -11,6 +11,27 @@
     "myGroupsHint": "Lee òtù",
     "error": "Enweghị ike ibudata ọnụọgụ gị."
   },
+  "supplier": {
+    "welcome": "Nnọọ, {{name}}",
+    "subtitle": "Jikwaa ndepụta gị ma zaghachi ndị na-azụ ahịa.",
+    "activeListings": "Ndepụta na-arụ ọrụ",
+    "activeListingsHint": "n'ime {{count}} niile",
+    "inquiries": "Ajụjụ ndị na-azụ ahịa",
+    "inquiriesHint": "N'ime ụbọchị 7 gara aga",
+    "rating": "Ọkwa gị",
+    "reviews_one": "Nyocha {{count}}",
+    "reviews_other": "Nyocha {{count}}",
+    "noRating": "Enweghị nyocha ọ bụla",
+    "listingsTitle": "Ndepụta M",
+    "addListing": "Tinye ihe ndepụta",
+    "addListingNote": "Njikwa ndepụta ga-abịa na backend Usoro 2.",
+    "noListings": "Idebanyebeghị ngwaahịa ọ bụla.",
+    "inStock": "Dị",
+    "outOfStock": "Agwụla",
+    "inquiriesTitle": "Ajụjụ na-adịbeghị anya",
+    "noInquiries": "Enweghị ajụjụ ọ bụla. Debanye ngwaahịa ka ị malite ịnata ha.",
+    "call": "Kpọọ"
+  },
   "quicklinks": {
     "marketplace": "Chọgharịa Ahịa",
     "marketplaceDesc": "Chọta mkpụrụ, fatalaịza, akụrụngwa na ndị na-azụ ahịa",

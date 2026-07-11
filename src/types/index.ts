@@ -184,3 +184,13 @@ export interface Credentials {
   pin: string;
   role: UserRole;
 }
+
+export interface SupplierInquiry {
+  id: string;
+  buyerName: string;
+  productId: string;
+  productName: string;
+  message: string;
+  date: string;
+  phone: string;
+}

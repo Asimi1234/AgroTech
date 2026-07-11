@@ -8,6 +8,7 @@ import {
   productCategories,
   products,
   regions,
+  supplierInquiries,
   users,
   weatherForecasts,
 } from '@/data/mockData';
@@ -17,15 +18,26 @@ import type {
   AdvisoryInput,
   CommodityPrice,
   Cooperative,
+  CropType,
   DashboardSummary,
   PlatformAnalytics,
   Product,
   ProductDetail,
   RegionId,
+  SupplierInquiry,
   User,
   UserRole,
   WeatherForecast,
 } from '@/types';
+
+export interface NewCooperativeInput {
+  name: string;
+  cropFocus: CropType;
+  region: RegionId;
+  description: string;
+  /** The user creating the group — becomes its first member and lead. */
+  creator: { id: string; name: string; phone: string };
+}
 
 export interface ProductQuery {
   cropType?: string;
@@ -94,8 +106,10 @@ export interface AgroApi {
   getProduct(id: string): Promise<ProductDetail>;
   getCooperatives(): Promise<Cooperative[]>;
   getCooperative(id: string): Promise<Cooperative>;
+  createCooperative(input: NewCooperativeInput): Promise<Cooperative>;
   getUsers(): Promise<User[]>;
   setUserStatus(id: string, status: User['status']): Promise<User>;
+  getSupplierInquiries(): Promise<SupplierInquiry[]>;
   getDashboardSummary(): Promise<DashboardSummary>;
   getPlatformAnalytics(): Promise<PlatformAnalytics>;
 }
@@ -170,6 +184,10 @@ class MockApi implements AgroApi {
    * across navigation within a session. Phase 2 replaces this with real writes.
    */
   private userList: User[] = clone(users);
+
+  /** Mutable cooperative list so user-created groups persist within a session. */
+  private coops: Cooperative[] = clone(cooperatives);
+  private coopSeq = cooperatives.length;
 
   private async respond<T>(value: T, latencyOverride?: number): Promise<T> {
     await delay(latencyOverride ?? this.latency);
@@ -315,15 +333,38 @@ class MockApi implements AgroApi {
   }
 
   getCooperatives(): Promise<Cooperative[]> {
-    return this.respond(cooperatives);
+    return this.respond(this.coops);
   }
 
   async getCooperative(id: string): Promise<Cooperative> {
-    const group = cooperatives.find((g) => g.id === id);
+    const group = this.coops.find((g) => g.id === id);
     if (!group) {
       const error: ApiError = { status: 404, message: 'Group not found.' };
       throw error;
     }
+    return this.respond(group);
+  }
+
+  async createCooperative(input: NewCooperativeInput): Promise<Cooperative> {
+    const id = `g${(this.coopSeq += 1)}`;
+    const group: Cooperative = {
+      id,
+      name: input.name,
+      cropFocus: input.cropFocus,
+      region: input.region,
+      memberCount: 1,
+      description: input.description,
+      members: [
+        {
+          id: `${id}-m1`,
+          name: input.creator.name,
+          role: 'Chairperson',
+          phone: input.creator.phone,
+        },
+      ],
+      messages: [],
+    };
+    this.coops = [group, ...this.coops];
     return this.respond(group);
   }
 
@@ -348,6 +389,10 @@ class MockApi implements AgroApi {
     const updated: User = { ...target, status };
     this.userList = this.userList.map((u) => (u.id === id ? updated : u));
     return this.respond(updated);
+  }
+
+  getSupplierInquiries(): Promise<SupplierInquiry[]> {
+    return this.respond(supplierInquiries);
   }
 
   getDashboardSummary(): Promise<DashboardSummary> {
@@ -483,6 +528,13 @@ class HttpApi implements AgroApi {
     return this.request(`/cooperatives/${id}`);
   }
 
+  createCooperative(input: NewCooperativeInput): Promise<Cooperative> {
+    return this.request('/cooperatives', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
   getUsers(): Promise<User[]> {
     return this.request('/users');
   }
@@ -492,6 +544,10 @@ class HttpApi implements AgroApi {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });
+  }
+
+  getSupplierInquiries(): Promise<SupplierInquiry[]> {
+    return this.request('/supplier/inquiries');
   }
 
   getDashboardSummary(): Promise<DashboardSummary> {

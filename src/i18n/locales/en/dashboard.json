@@ -11,6 +11,27 @@
     "myGroupsHint": "View groups",
     "error": "Couldn't load your stats."
   },
+  "supplier": {
+    "welcome": "Welcome, {{name}}",
+    "subtitle": "Manage your listings and respond to buyers.",
+    "activeListings": "Active listings",
+    "activeListingsHint": "of {{count}} total",
+    "inquiries": "Buyer inquiries",
+    "inquiriesHint": "In the last 7 days",
+    "rating": "Your rating",
+    "reviews_one": "{{count}} review",
+    "reviews_other": "{{count}} reviews",
+    "noRating": "No reviews yet",
+    "listingsTitle": "My Listings",
+    "addListing": "Add listing",
+    "addListingNote": "Listing management arrives with the Phase 2 backend.",
+    "noListings": "You haven't listed any products yet.",
+    "inStock": "In stock",
+    "outOfStock": "Out of stock",
+    "inquiriesTitle": "Recent inquiries",
+    "noInquiries": "No inquiries yet. List a product to start receiving them.",
+    "call": "Call"
+  },
   "quicklinks": {
     "marketplace": "Browse Marketplace",
     "marketplaceDesc": "Find seeds, fertilizer, equipment and buyers",

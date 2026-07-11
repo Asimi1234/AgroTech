@@ -5,12 +5,13 @@ import { Card, CardBody, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Icon } from '@/components/ui/Icon';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/services/api';
-import { cropLabel, regionLabel } from '@/data/mockData';
+import { cropLabel, crops, regionLabel, regions } from '@/data/mockData';
 import {
   cooperativeDescription,
   cooperativeName,
@@ -20,7 +21,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { isGroupLead, isGroupMember, useGroupStore } from '@/store/groupStore';
 import { cn } from '@/lib/cn';
-import type { Cooperative, GroupMessage } from '@/types';
+import type { Cooperative, CropType, GroupMessage, RegionId } from '@/types';
 
 const initials = (name: string): string =>
   name
@@ -304,9 +305,107 @@ const DescriptionBlock = ({
   );
 };
 
+interface CreateInput {
+  name: string;
+  cropFocus: CropType;
+  region: RegionId;
+  description: string;
+}
+
+const CreateGroupForm = ({
+  initialRegion,
+  busy,
+  onCreate,
+  onCancel,
+}: {
+  initialRegion: RegionId;
+  busy: boolean;
+  onCreate: (input: CreateInput) => void;
+  onCancel: () => void;
+}) => {
+  const { t } = useTranslation('groups');
+  const [name, setName] = useState('');
+  const [cropFocus, setCropFocus] = useState<CropType>('cassava');
+  const [region, setRegion] = useState<RegionId>(initialRegion);
+  const [description, setDescription] = useState('');
+
+  const cropOptions = crops.map((c) => ({ value: c.id, label: cropLabel(c.id) }));
+  const regionOptions = regions.map((r) => ({
+    value: r.id,
+    label: regionLabel(r.id),
+  }));
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !description.trim()) return;
+    onCreate({
+      name: name.trim(),
+      cropFocus,
+      region,
+      description: description.trim(),
+    });
+  };
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle>{t('createTitle')}</CardTitle>
+        <p className="mt-0.5 text-sm text-slate-500">{t('createSubtitle')}</p>
+      </CardHeader>
+      <CardBody>
+        <form onSubmit={submit} className="space-y-3">
+          <Input
+            label={t('fieldName')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t('namePlaceholder')}
+            required
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select
+              label={t('fieldCrop')}
+              options={cropOptions}
+              value={cropFocus}
+              onChange={(e) => setCropFocus(e.target.value as CropType)}
+            />
+            <Select
+              label={t('fieldRegion')}
+              options={regionOptions}
+              value={region}
+              onChange={(e) => setRegion(e.target.value as RegionId)}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-semibold text-slate-800">
+              {t('fieldDescription')}
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              required
+              className="focus-ring w-full rounded-lg border-2 border-earth-200 bg-white px-3 py-2 text-base text-slate-900"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={busy}>
+              {t('create')}
+            </Button>
+            <Button type="button" variant="ghost" onClick={onCancel}>
+              {t('cancel')}
+            </Button>
+          </div>
+          <p className="text-xs text-slate-400">{t('createNote')}</p>
+        </form>
+      </CardBody>
+    </Card>
+  );
+};
+
 export const GroupsPage = () => {
   const { t } = useTranslation('groups');
-  const userName = useAuthStore((s) => s.user?.name);
+  const user = useAuthStore((s) => s.user);
+  const userName = user?.name;
   const joinOverrides = useGroupStore((s) => s.joinOverrides);
   const join = useGroupStore((s) => s.join);
   const leave = useGroupStore((s) => s.leave);
@@ -315,6 +414,24 @@ export const GroupsPage = () => {
     [],
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const handleCreate = async (input: CreateInput) => {
+    if (!user) return;
+    setBusy(true);
+    try {
+      const coop = await api.createCooperative({
+        ...input,
+        creator: { id: user.id, name: user.name, phone: user.phone },
+      });
+      await reload();
+      setSelectedId(coop.id);
+      setCreating(false);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const groups = useMemo(() => data ?? [], [data]);
   const mine = groups.filter((g) => isGroupMember(g, userName, joinOverrides));
@@ -332,7 +449,27 @@ export const GroupsPage = () => {
 
   return (
     <div>
-      <PageHeading title={t('title')} subtitle={t('subtitle')} />
+      <PageHeading
+        title={t('title')}
+        subtitle={t('subtitle')}
+        action={
+          creating ? undefined : (
+            <Button onClick={() => setCreating(true)}>
+              <Icon name="plus" className="h-4 w-4" />
+              {t('createGroup')}
+            </Button>
+          )
+        }
+      />
+
+      {creating && (
+        <CreateGroupForm
+          initialRegion={user?.region ?? 'oyo'}
+          busy={busy}
+          onCreate={handleCreate}
+          onCancel={() => setCreating(false)}
+        />
+      )}
 
       {loading && (
         <div className="grid gap-6 lg:grid-cols-[340px_1fr]">

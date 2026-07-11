@@ -11,6 +11,27 @@
     "myGroupsHint": "Wo àwọn ẹgbẹ́",
     "error": "Kò lè ṣí ìṣirò rẹ."
   },
+  "supplier": {
+    "welcome": "Káàbọ̀, {{name}}",
+    "subtitle": "Ṣàkóso àwọn ọjà rẹ kí o sì dáhùn àwọn olùrà.",
+    "activeListings": "Àwọn ọjà tí ń ṣiṣẹ́",
+    "activeListingsHint": "nínú {{count}} lápapọ̀",
+    "inquiries": "Ìbéèrè olùrà",
+    "inquiriesHint": "Nínú ọjọ́ 7 sẹ́yìn",
+    "rating": "Ìdíwọ̀n rẹ",
+    "reviews_one": "Àtúnyẹ̀wò {{count}}",
+    "reviews_other": "Àwọn àtúnyẹ̀wò {{count}}",
+    "noRating": "Kò sí àtúnyẹ̀wò síbẹ̀",
+    "listingsTitle": "Àwọn Ọjà Mi",
+    "addListing": "Fi ọjà kún",
+    "addListingNote": "Ìṣàkóso ọjà yóò dé pẹ̀lú ẹ̀rọ-ìhìn Ìpele 2.",
+    "noListings": "O kò tíì kọ ọjà kankan sílẹ̀.",
+    "inStock": "Wà ní ìṣura",
+    "outOfStock": "Kò sí mọ́",
+    "inquiriesTitle": "Àwọn ìbéèrè àìpẹ́",
+    "noInquiries": "Kò sí ìbéèrè síbẹ̀. Kọ ọjà sílẹ̀ láti bẹ̀rẹ̀ gbígbà wọn.",
+    "call": "Pè"
+  },
   "quicklinks": {
     "marketplace": "Ṣàwárí Ọjà",
     "marketplaceDesc": "Wá irúgbìn, ajílẹ̀, ohun-èlò àti olùrà",

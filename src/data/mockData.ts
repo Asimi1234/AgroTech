@@ -8,6 +8,7 @@ import type {
   ProductDetail,
   Region,
   Supplier,
+  SupplierInquiry,
   User,
   WeatherForecast,
 } from '@/types';
@@ -303,6 +304,19 @@ export const users: User[] = [
   { id: 'u7', name: 'Terhemba Iorpev', role: 'farmer', phone: '+234 813 220 1145', region: 'benue', avatarInitials: 'TI', status: 'inactive', lastActive: '2026-07-02 09:15' },
   { id: 'u8', name: 'Platform Admin', role: 'admin', phone: '+234 700 000 0000', region: 'oyo', avatarInitials: 'PA', status: 'active', lastActive: '2026-07-11 08:45' },
   { id: 'u9', name: 'Chinelo Eze', role: 'admin', phone: '+234 809 500 7788', region: 'enugu', avatarInitials: 'CE', status: 'active', lastActive: '2026-07-11 09:10' },
+];
+
+/**
+ * Recent buyer inquiries surfaced on the supplier dashboard. Seeded against
+ * GreenField Agro (s1) product ids so the demo supplier sees relevant ones;
+ * the dashboard filters to the signed-in supplier's own listings. Buyer names
+ * and message text are user-generated, so they stay in their source language.
+ */
+export const supplierInquiries: SupplierInquiry[] = [
+  { id: 'q1', buyerName: 'Musa Ibrahim', productId: 'p1', productName: 'Improved Cassava Stem Cuttings (TME 419)', message: 'Do you have 20 bundles available for next week?', date: '2026-07-11 09:20', phone: '+234 803 220 1180' },
+  { id: 'q2', buyerName: 'Grace Okon', productId: 'p17', productName: 'Dried Cassava Chips (Bulk)', message: 'What is the price for 2 tonnes delivered to Ibadan?', date: '2026-07-10 16:05', phone: '+234 806 771 4410' },
+  { id: 'q3', buyerName: 'Yakubu Danladi', productId: 'p7', productName: 'Organic Poultry Manure Pellets', message: 'Is a bulk discount available for 30 bags?', date: '2026-07-10 11:40', phone: '+234 813 900 2255' },
+  { id: 'q4', buyerName: 'Ngozi Umeh', productId: 'p14', productName: 'Mancozeb Fungicide (1kg)', message: 'Can I pick up today? Which market are you at?', date: '2026-07-09 14:15', phone: '+234 705 118 9080' },
 ];
 
 /**

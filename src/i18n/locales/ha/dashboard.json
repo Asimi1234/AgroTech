@@ -11,6 +11,27 @@
     "myGroupsHint": "Duba ƙungiyoyi",
     "error": "An kasa loda ƙididdigarka."
   },
+  "supplier": {
+    "welcome": "Barka da zuwa, {{name}}",
+    "subtitle": "Sarrafa kayanka ka kuma amsa masu saye.",
+    "activeListings": "Kaya masu aiki",
+    "activeListingsHint": "daga cikin {{count}} gaba ɗaya",
+    "inquiries": "Tambayoyin masu saye",
+    "inquiriesHint": "Cikin kwanaki 7 da suka wuce",
+    "rating": "Ƙimarka",
+    "reviews_one": "Bita {{count}}",
+    "reviews_other": "Bita {{count}}",
+    "noRating": "Babu bita tukuna",
+    "listingsTitle": "Kayana",
+    "addListing": "Ƙara kaya",
+    "addListingNote": "Sarrafa kaya zai zo tare da bayan-gida na Mataki na 2.",
+    "noListings": "Ba ka jera wani kaya ba tukuna.",
+    "inStock": "Akwai",
+    "outOfStock": "An gama",
+    "inquiriesTitle": "Sabbin tambayoyi",
+    "noInquiries": "Babu tambayoyi tukuna. Jera kaya don fara samu.",
+    "call": "Kira"
+  },
   "quicklinks": {
     "marketplace": "Bincika Kasuwa",
     "marketplaceDesc": "Nemo iri, taki, kayan aiki da masu saye",
