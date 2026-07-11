@@ -163,9 +163,12 @@ export const SignupPage = () => {
       <div className="flex flex-1 items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div className="mb-6 flex flex-col items-center text-center">
-            <div className="rounded-xl bg-white px-4 py-3">
+            <Link
+              to="/"
+              className="focus-ring rounded-xl bg-white px-4 py-3 transition-shadow hover:shadow-md"
+            >
               <Logo />
-            </div>
+            </Link>
             <p className="mt-4 max-w-xs text-brand-100">{t('signup.tagline')}</p>
           </div>
 
