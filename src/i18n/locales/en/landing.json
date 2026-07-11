@@ -2,7 +2,7 @@
   "nav": { "why": "Why OjàFarm", "how": "How it works", "features": "Features", "stories": "Stories" },
   "header": { "signIn": "Sign in", "signUpFree": "Sign up free" },
   "hero": {
-    "badge": "Works on any phone — app, SMS & USSD",
+    "badge": "Works on any phone — app, SMS",
     "line1": "Better prices.",
     "line2": "Better crops.",
     "line3": "Better lives.",
