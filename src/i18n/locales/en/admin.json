@@ -27,8 +27,13 @@
     "colRegion": "Region",
     "colLastActive": "Last active",
     "colStatus": "Status",
+    "colActions": "Action",
     "statusActive": "Active",
-    "statusInactive": "Inactive"
+    "statusInactive": "Inactive",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "locked": "Protected",
+    "lockedHint": "Admin accounts can't be deactivated."
   },
   "advisories": {
     "title": "Crop Advisories",

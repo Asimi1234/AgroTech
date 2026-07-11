@@ -28,7 +28,12 @@
     "colLastActive": "Iṣẹ́ ìkẹyìn",
     "colStatus": "Ipò",
     "statusActive": "Ń ṣiṣẹ́",
-    "statusInactive": "Kò ṣiṣẹ́"
+    "statusInactive": "Kò ṣiṣẹ́",
+    "colActions": "Ìgbésẹ̀",
+    "activate": "Mú ṣiṣẹ́",
+    "deactivate": "Dá dúró",
+    "locked": "Ààbò",
+    "lockedHint": "A kò lè dá àkàǹtì admin dúró."
   },
   "advisories": {
     "title": "Ìmọ̀ràn Àgbẹ̀",

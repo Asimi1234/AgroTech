@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { Icon } from '@/components/ui/Icon';
 import { AdvisoriesManager } from '@/components/admin/AdvisoriesManager';
 import { AnalyticsPanel } from '@/components/admin/AnalyticsPanel';
 import { useAsync } from '@/hooks/useAsync';
@@ -13,7 +14,7 @@ import { api } from '@/services/api';
 import { formatNaira } from '@/lib/cn';
 import { regionLabel } from '@/data/mockData';
 import { commodityLabel, unitLabel } from '@/i18n/catalog';
-import type { CommodityPrice } from '@/types';
+import type { CommodityPrice, User } from '@/types';
 
 const PriceEditor = () => {
   const { t } = useTranslation('admin');
@@ -195,23 +196,40 @@ const WeatherTable = () => {
 const UsersTable = () => {
   const { t } = useTranslation('admin');
   const { data, loading, error, reload } = useAsync(() => api.getUsers(), []);
+  const [rows, setRows] = useState<User[]>([]);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data) setRows(data);
+  }, [data]);
+
+  const toggle = async (user: User) => {
+    const next = user.status === 'active' ? 'inactive' : 'active';
+    setBusyId(user.id);
+    try {
+      const updated = await api.setUserStatus(user.id, next);
+      setRows((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const activeCount = rows.filter((u) => u.status === 'active').length;
 
   return (
     <Card>
       <CardHeader className="flex items-center justify-between">
         <CardTitle>{t('users.title')}</CardTitle>
-        {data && (
+        {rows.length > 0 && (
           <span className="text-sm text-slate-500">
-            {t('users.active', {
-              count: data.filter((u) => u.status === 'active').length,
-            })}
+            {t('users.active', { count: activeCount })}
           </span>
         )}
       </CardHeader>
       <CardBody>
         {loading && <Skeleton className="h-56 w-full" />}
         {error && !loading && <ErrorState message={error} onRetry={reload} />}
-        {!loading && !error && data && (
+        {!loading && !error && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -220,38 +238,63 @@ const UsersTable = () => {
                   <th className="py-2 pr-3 font-semibold">{t('users.colRole')}</th>
                   <th className="py-2 pr-3 font-semibold">{t('users.colRegion')}</th>
                   <th className="py-2 pr-3 font-semibold">{t('users.colLastActive')}</th>
-                  <th className="py-2 font-semibold">{t('users.colStatus')}</th>
+                  <th className="py-2 pr-3 font-semibold">{t('users.colStatus')}</th>
+                  <th className="py-2 font-semibold">{t('users.colActions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {data.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="border-b border-earth-100 last:border-0"
-                  >
-                    <td className="py-3 pr-3 font-semibold text-slate-900">
-                      {user.name}
-                    </td>
-                    <td className="py-3 pr-3 text-slate-600">
-                      {t(`common:profile.${user.role}`)}
-                    </td>
-                    <td className="py-3 pr-3 text-slate-600">
-                      {regionLabel(user.region)}
-                    </td>
-                    <td className="py-3 pr-3 text-slate-500">
-                      {user.lastActive}
-                    </td>
-                    <td className="py-3">
-                      <Badge
-                        tone={user.status === 'active' ? 'success' : 'neutral'}
-                      >
-                        {user.status === 'active'
-                          ? t('users.statusActive')
-                          : t('users.statusInactive')}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((user) => {
+                  const isAdmin = user.role === 'admin';
+                  const active = user.status === 'active';
+                  return (
+                    <tr
+                      key={user.id}
+                      className="border-b border-earth-100 last:border-0"
+                    >
+                      <td className="py-3 pr-3 font-semibold text-slate-900">
+                        {user.name}
+                      </td>
+                      <td className="py-3 pr-3 text-slate-600">
+                        {t(`common:profile.${user.role}`)}
+                      </td>
+                      <td className="py-3 pr-3 text-slate-600">
+                        {regionLabel(user.region)}
+                      </td>
+                      <td className="py-3 pr-3 text-slate-500">
+                        {user.lastActive}
+                      </td>
+                      <td className="py-3 pr-3">
+                        <Badge tone={active ? 'success' : 'neutral'}>
+                          {active
+                            ? t('users.statusActive')
+                            : t('users.statusInactive')}
+                        </Badge>
+                      </td>
+                      <td className="py-3">
+                        {isAdmin ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-xs font-medium text-slate-400"
+                            title={t('users.lockedHint')}
+                          >
+                            <Icon name="lock" className="h-4 w-4" />
+                            {t('users.locked')}
+                          </span>
+                        ) : (
+                          <Button
+                            variant={active ? 'ghost' : 'outline'}
+                            size="sm"
+                            disabled={busyId === user.id}
+                            onClick={() => toggle(user)}
+                          >
+                            {active
+                              ? t('users.deactivate')
+                              : t('users.activate')}
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -28,7 +28,12 @@
     "colLastActive": "Aiki na ƙarshe",
     "colStatus": "Matsayi",
     "statusActive": "Mai aiki",
-    "statusInactive": "Ba ya aiki"
+    "statusInactive": "Ba ya aiki",
+    "colActions": "Mataki",
+    "activate": "Kunna",
+    "deactivate": "Kashe",
+    "locked": "Kariya",
+    "lockedHint": "Ba za a iya kashe asusun admin ba."
   },
   "advisories": {
     "title": "Shawarwarin Noma",

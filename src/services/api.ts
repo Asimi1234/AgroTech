@@ -95,6 +95,7 @@ export interface AgroApi {
   getCooperatives(): Promise<Cooperative[]>;
   getCooperative(id: string): Promise<Cooperative>;
   getUsers(): Promise<User[]>;
+  setUserStatus(id: string, status: User['status']): Promise<User>;
   getDashboardSummary(): Promise<DashboardSummary>;
   getPlatformAnalytics(): Promise<PlatformAnalytics>;
 }
@@ -163,6 +164,12 @@ class MockApi implements AgroApi {
    */
   private advisories: Advisory[] = clone(advisories);
   private advisorySeq = advisories.length;
+
+  /**
+   * Mutable working copy of the user directory so admin status changes persist
+   * across navigation within a session. Phase 2 replaces this with real writes.
+   */
+  private userList: User[] = clone(users);
 
   private async respond<T>(value: T, latencyOverride?: number): Promise<T> {
     await delay(latencyOverride ?? this.latency);
@@ -321,7 +328,26 @@ class MockApi implements AgroApi {
   }
 
   getUsers(): Promise<User[]> {
-    return this.respond(users);
+    return this.respond(this.userList);
+  }
+
+  async setUserStatus(id: string, status: User['status']): Promise<User> {
+    const target = this.userList.find((u) => u.id === id);
+    if (!target) {
+      const error: ApiError = { status: 404, message: 'User not found.' };
+      throw error;
+    }
+    // Admin accounts are protected — no admin may deactivate another admin.
+    if (target.role === 'admin') {
+      const error: ApiError = {
+        status: 403,
+        message: 'Admin accounts cannot be deactivated.',
+      };
+      throw error;
+    }
+    const updated: User = { ...target, status };
+    this.userList = this.userList.map((u) => (u.id === id ? updated : u));
+    return this.respond(updated);
   }
 
   getDashboardSummary(): Promise<DashboardSummary> {
@@ -353,14 +379,14 @@ class MockApi implements AgroApi {
       .map((r) => ({
         region: r.id,
         label: r.label,
-        count: users.filter((u) => u.region === r.id).length,
+        count: this.userList.filter((u) => u.region === r.id).length,
       }))
       .filter((r) => r.count > 0)
       .sort((a, b) => b.count - a.count);
 
     return this.respond({
-      totalUsers: users.length,
-      activeUsers: users.filter((u) => u.status === 'active').length,
+      totalUsers: this.userList.length,
+      activeUsers: this.userList.filter((u) => u.status === 'active').length,
       totalListings: products.length,
       cooperativeCount: cooperatives.length,
       cooperativeMembers: cooperatives.reduce((sum, g) => sum + g.memberCount, 0),
@@ -459,6 +485,13 @@ class HttpApi implements AgroApi {
 
   getUsers(): Promise<User[]> {
     return this.request('/users');
+  }
+
+  setUserStatus(id: string, status: User['status']): Promise<User> {
+    return this.request(`/users/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
   }
 
   getDashboardSummary(): Promise<DashboardSummary> {

@@ -28,7 +28,12 @@
     "colLastActive": "Ọrụ ikpeazụ",
     "colStatus": "Ọnọdụ",
     "statusActive": "Na-arụ ọrụ",
-    "statusInactive": "Anaghị arụ ọrụ"
+    "statusInactive": "Anaghị arụ ọrụ",
+    "colActions": "Ihe omume",
+    "activate": "Gbanye",
+    "deactivate": "Gbanyụọ",
+    "locked": "Echedoro",
+    "lockedHint": "Enweghị ike ịgbanyụ akaụntụ admin."
   },
   "advisories": {
     "title": "Ndụmọdụ Ọrụ Ugbo",

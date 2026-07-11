@@ -9,6 +9,7 @@ import {
   Cloud,
   CloudRain,
   LayoutDashboard,
+  Lock,
   LogOut,
   MapPin,
   Menu,
@@ -65,7 +66,8 @@ export type IconName =
   | 'chart'
   | 'join'
   | 'leave'
-  | 'alert';
+  | 'alert'
+  | 'lock';
 
 const icons: Record<IconName, LucideIcon> = {
   dashboard: LayoutDashboard,
@@ -99,6 +101,7 @@ const icons: Record<IconName, LucideIcon> = {
   join: UserPlus,
   leave: UserMinus,
   alert: AlertTriangle,
+  lock: Lock,
 };
 
 interface IconProps {

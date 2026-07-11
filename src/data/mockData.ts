@@ -302,6 +302,7 @@ export const users: User[] = [
   { id: 'u6', name: 'Delta Palm Resources', role: 'supplier', phone: '+234 802 998 4410', region: 'cross-river', avatarInitials: 'DP', status: 'active', lastActive: '2026-07-10 20:05' },
   { id: 'u7', name: 'Terhemba Iorpev', role: 'farmer', phone: '+234 813 220 1145', region: 'benue', avatarInitials: 'TI', status: 'inactive', lastActive: '2026-07-02 09:15' },
   { id: 'u8', name: 'Platform Admin', role: 'admin', phone: '+234 700 000 0000', region: 'oyo', avatarInitials: 'PA', status: 'active', lastActive: '2026-07-11 08:45' },
+  { id: 'u9', name: 'Chinelo Eze', role: 'admin', phone: '+234 809 500 7788', region: 'enugu', avatarInitials: 'CE', status: 'active', lastActive: '2026-07-11 09:10' },
 ];
 
 /**
