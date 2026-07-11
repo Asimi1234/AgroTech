@@ -1,0 +1,17 @@
+{
+  "back": "Back to marketplace",
+  "inStock": "In stock",
+  "outOfStock": "Out of stock",
+  "sendInquiry": "Send inquiry",
+  "inquirySent": "Inquiry sent",
+  "inquiryNote": "Your inquiry was recorded. In Phase 2 this notifies the supplier directly. For now, call {{phone}}.",
+  "callSupplier": "Call supplier · {{phone}}",
+  "supplier": "Supplier",
+  "priceTrend": "Price Trend",
+  "priceTrendSubtitle": "Daily price over the last 30 days",
+  "days30": "30 days",
+  "chartAria": "Line chart of daily price over the last 30 days",
+  "reviews": "Reviews",
+  "reviewCount_one": "{{count}} review",
+  "reviewCount_other": "{{count}} reviews"
+}

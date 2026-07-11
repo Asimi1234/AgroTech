@@ -1,0 +1,39 @@
+{
+  "welcome": "Barka da zuwa, {{name}}",
+  "subtitle": "Farashinka, yanayi, da shawarwarin noma a wuri ɗaya.",
+  "stats": {
+    "listings": "Jerin kasuwa",
+    "listingsHint": "Akwai yanzu",
+    "topMover": "Babban canjin farashi",
+    "advisories": "Shawarwarin da za a bi",
+    "advisoriesHint": "Mataki ko gargaɗi",
+    "myGroups": "Ƙungiyoyina",
+    "myGroupsHint": "Duba ƙungiyoyi",
+    "error": "An kasa loda ƙididdigarka."
+  },
+  "quicklinks": {
+    "marketplace": "Bincika Kasuwa",
+    "marketplaceDesc": "Nemo iri, taki, kayan aiki da masu saye",
+    "groups": "Ƙungiyoyina",
+    "groupsDesc": "Haɗa kai da ƙungiyoyinka"
+  },
+  "prices": { "title": "Farashin Kayayyaki", "today": "Yau" },
+  "weather": {
+    "title": "Hasashen Yanayi",
+    "humidity": "Danshi {{value}}%",
+    "updated": "An sabunta {{time}}",
+    "state": "Jiha",
+    "conditions": {
+      "sunny": "Rana",
+      "partlyCloudy": "Ɗan gajimare",
+      "cloudy": "Gajimare",
+      "rain": "Ruwan sama",
+      "storm": "Hadari"
+    }
+  },
+  "advisories": {
+    "title": "Shawarwarin Noma",
+    "subtitle": "Bisa kalandar noma na yanzu",
+    "severity": { "info": "Ja-gora", "action": "Ana buƙatar mataki", "warning": "Gargaɗi" }
+  }
+}

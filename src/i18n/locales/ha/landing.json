@@ -1,0 +1,74 @@
+{
+  "nav": { "why": "Me ya sa OjàFarm", "how": "Yadda yake aiki", "features": "Fasali", "stories": "Labarai" },
+  "header": { "signIn": "Shiga", "signUpFree": "Yi rajista kyauta" },
+  "hero": {
+    "badge": "Yana aiki a kowace waya — app, SMS da USSD",
+    "line1": "Farashi mai kyau.",
+    "line2": "Amfanin gona mai kyau.",
+    "line3": "Rayuwa mai kyau.",
+    "subtitle": "OjàFarm na haɗa ƙananan manoman Najeriya kai tsaye da masu sayar da kayan aiki, masu tarawa da masu saye — ka sayar da tsada, ka saya da rahusa, ka bunƙasa da ƙarfin gwiwa.",
+    "ctaFarmer": "Yi rajista a matsayin manomi",
+    "ctaSupplier": "Yi rajista a matsayin mai sayarwa",
+    "todaysPrices": "Farashin yau",
+    "live": "Kai tsaye"
+  },
+  "stats": { "farmers": "Manoma da suka shiga", "states": "Jihohin da aka rufe", "priceGain": "Matsakaicin ribar farashi" },
+  "why": {
+    "label": "Me ya sa OjàFarm",
+    "heading": "Matsalolin da ƙananan manoma ke fuskanta — da yadda muke warware su",
+    "problemTag": "Matsala",
+    "solutionTag": "Mafita",
+    "items": [
+      { "problem": "Manoma ba su da hanyar kasuwa", "solution": "Haɗi kai tsaye da amintattun masu saye da masu tarawa kusa da kai." },
+      { "problem": "Bayanan noma da suka tsufa", "solution": "Faɗakarwar yanayi da farashin gona bisa amfanin da kake nomawa." },
+      { "problem": "Rauni wajen ciniki", "solution": "Farashin haɗin gwiwa da kayan aikin oda mai yawa da ke ƙara ƙarfinka." }
+    ]
+  },
+  "how": {
+    "label": "Yadda yake aiki",
+    "heading": "Daga rajista zuwa kasuwanci mai ƙarfi cikin matakai huɗu",
+    "step": "Mataki",
+    "items": [
+      { "title": "Yi rajista", "detail": "Ƙirƙiri asusu a matsayin manomi ko mai sayarwa cikin mintuna." },
+      { "title": "Bincika ko lissafa", "detail": "Duba farashin kai tsaye, ko lissafa kayanka don masu saye su same su." },
+      { "title": "Haɗa kai tsaye", "detail": "Tuntuɓi ɗayan ɓangaren ta waya ko SMS — babu ɗan tsakiya." },
+      { "title": "Bunƙasa", "detail": "Sayar da tsada, saya da rahusa, ka gina tarihin ciniki." }
+    ]
+  },
+  "features": {
+    "label": "Fasali",
+    "heading": "Duk abin da kake buƙata a wuri ɗaya",
+    "items": [
+      { "title": "Sabunta farashin gona", "detail": "Farashin kayayyaki na yau da kullum don rogo, masara, man dabino da shinkafa." },
+      { "title": "Faɗakarwar yanayi", "detail": "Hasashen ruwan sama da zafi na kwana biyar don yankinka." },
+      { "title": "Shawarwarin noma", "detail": "Ja-gora bisa kalandar noma da matsin kwari." },
+      { "title": "Ƙungiyoyin haɗin gwiwa", "detail": "Haɗa kayan aiki, ajiya da sayarwa mai yawa da abokanka." },
+      { "title": "Tuntuɓa kai tsaye", "detail": "Kira masu sayarwa da masu saye kai tsaye daga kowane lissafi." },
+      { "title": "Ƙima da sharhi", "detail": "Yi ciniki da ƙarfin gwiwa ta amfani da ƙimar masu sayarwa a fili." }
+    ]
+  },
+  "stories": {
+    "label": "Labarai",
+    "heading": "Manoma da 'yan kasuwa a faɗin Najeriya sun amince da mu",
+    "items": [
+      { "quote": "Yanzu ina sayar da rogona kai tsaye ga mai sarrafawa. Kuɗin shiga na ya ƙaru kuma na guji 'yan tsaka.", "role": "Manomin rogo · Oyo" },
+      { "quote": "Faɗakarwar farashi na gaya mini lokacin da zan riƙe hatsina. Damina da ta wuce, hakan kaɗai ya biya.", "role": "Mai tara masara · Kaduna" },
+      { "quote": "Kayan aikin haɗin gwiwa sun bar ƙungiyarmu ta raba na’urar niƙa da sayar da man tare.", "role": "Mai niƙa man dabino · Cross River" }
+    ]
+  },
+  "cta": {
+    "heading": "Shirye ka bunƙasa?",
+    "subtitle": "Ka shiga dubban manoma da masu sayarwa da ke ciniki cikin wayo a OjàFarm. Rajista kyauta ce kuma tana aiki a kowace waya.",
+    "farmer": "Fara a matsayin manomi",
+    "supplier": "Zama mai sayarwa",
+    "seeHow": "Duba yadda yake aiki"
+  },
+  "footer": {
+    "tagline": "Haɗa manoman Najeriya da masu sayar da kayan aiki, masu tarawa, da masu saye.",
+    "about": "Game da mu",
+    "features": "Fasali",
+    "stories": "Labarai",
+    "signIn": "Shiga",
+    "rights": "© 2026 OjàFarm. An tanadi duk haƙƙoƙi."
+  }
+}

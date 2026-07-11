@@ -1,0 +1,40 @@
+{
+  "title": "Ahịa",
+  "subtitle": "Ngwa ọrụ ugbo, akụrụngwa, na ihe ubi sitere n'aka ndị na-eweta a kwadoro.",
+  "filters": {
+    "search": "Chọọ ngwaahịa ma ọ bụ ndị na-eweta",
+    "cropType": "Ụdị ihe ọkụkụ",
+    "allCrops": "Ihe ọkụkụ niile",
+    "location": "Ebe",
+    "allRegions": "Mpaghara niile",
+    "sortBy": "Hazie site na",
+    "maxPrice": "Ọnụ ahịa kachasị",
+    "reset": "Tọgharịa nzọ",
+    "results_one": "Nsonaazụ {{count}}",
+    "results_other": "Nsonaazụ {{count}}"
+  },
+  "sort": {
+    "newest": "Kacha ọhụrụ",
+    "priceAsc": "Ọnụ ahịa: ala ruo elu",
+    "priceDesc": "Ọnụ ahịa: elu ruo ala",
+    "rating": "Ọkwa kachasị elu"
+  },
+  "card": { "viewDetails": "Lee Nkọwa", "outOfStock": "Ọ dịghị" },
+  "categories": {
+    "seed": "Mkpụrụ",
+    "fertilizer": "Fatalaịza",
+    "equipment": "Akụrụngwa",
+    "crop-protection": "Nchekwa ihe ọkụkụ",
+    "produce": "Ihe ubi"
+  },
+  "empty": {
+    "title": "Ọ nweghị ngwaahịa dabara na nzọ gị",
+    "message": "Gbalịa ịgbasa ọnụ ahịa, họrọ ihe ọkụkụ ọzọ, ma ọ bụ hichapụ nzọ.",
+    "clear": "Hichapụ nzọ"
+  },
+  "feed": {
+    "showing": "Na-egosi {{shown}} n'ime {{total}} ngwaahịa",
+    "all": "Egosiri ngwaahịa {{total}} niile",
+    "loadingMore": "Na-ebubata ngwaahịa ọzọ"
+  }
+}

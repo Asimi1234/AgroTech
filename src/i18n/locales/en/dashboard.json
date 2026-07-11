@@ -1,0 +1,39 @@
+{
+  "welcome": "Welcome, {{name}}",
+  "subtitle": "Your prices, weather, and crop advisories at a glance.",
+  "stats": {
+    "listings": "Market listings",
+    "listingsHint": "In stock now",
+    "topMover": "Top price mover",
+    "advisories": "Advisories to act on",
+    "advisoriesHint": "Action or warning",
+    "myGroups": "My cooperatives",
+    "myGroupsHint": "View groups",
+    "error": "Couldn't load your stats."
+  },
+  "quicklinks": {
+    "marketplace": "Browse Marketplace",
+    "marketplaceDesc": "Find seeds, fertilizer, equipment and buyers",
+    "groups": "My Groups",
+    "groupsDesc": "Coordinate with your cooperatives"
+  },
+  "prices": { "title": "Commodity Prices", "today": "Today" },
+  "weather": {
+    "title": "Weather Forecast",
+    "humidity": "{{value}}% humidity",
+    "updated": "Updated {{time}}",
+    "state": "State",
+    "conditions": {
+      "sunny": "Sunny",
+      "partlyCloudy": "Partly cloudy",
+      "cloudy": "Cloudy",
+      "rain": "Rain",
+      "storm": "Storms"
+    }
+  },
+  "advisories": {
+    "title": "Agricultural Advisories",
+    "subtitle": "Tied to the current crop calendar",
+    "severity": { "info": "Guidance", "action": "Action needed", "warning": "Warning" }
+  }
+}

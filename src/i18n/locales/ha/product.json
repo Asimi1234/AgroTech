@@ -1,0 +1,17 @@
+{
+  "back": "Koma Kasuwa",
+  "inStock": "Akwai a hannu",
+  "outOfStock": "Babu a hannu",
+  "sendInquiry": "Aika tambaya",
+  "inquirySent": "An aika tambaya",
+  "inquiryNote": "An rubuta tambayarka. A Mataki na 2 wannan zai sanar da mai sayarwa kai tsaye. A yanzu, kira {{phone}}.",
+  "callSupplier": "Kira mai sayarwa · {{phone}}",
+  "supplier": "Mai sayarwa",
+  "priceTrend": "Yanayin Farashi",
+  "priceTrendSubtitle": "Farashin yau da kullum na kwanaki 30 da suka gabata",
+  "days30": "Kwanaki 30",
+  "chartAria": "Jadawalin layin farashin yau da kullum na kwanaki 30 da suka gabata",
+  "reviews": "Sharhi",
+  "reviewCount_one": "Sharhi {{count}}",
+  "reviewCount_other": "Sharhi {{count}}"
+}

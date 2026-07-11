@@ -1,0 +1,17 @@
+{
+  "nav": { "dashboard": "Gida", "marketplace": "Kasuwa", "groups": "Ƙungiyoyi", "admin": "Gudanarwa" },
+  "profile": {
+    "farmer": "Manomi",
+    "supplier": "Mai sayarwa",
+    "admin": "Manaja",
+    "signOut": "Fita",
+    "state": "Jiha"
+  },
+  "error": {
+    "title": "An sami matsala",
+    "body": "Kuskuren da ba a zata ba ya katse wannan shafin. Za ka iya sake gwadawa ko sake loda manhaja.",
+    "retry": "Sake gwadawa",
+    "reload": "Sake loda manhaja"
+  },
+  "loadError": { "title": "An kasa loda bayanai", "retry": "Sake gwadawa" }
+}

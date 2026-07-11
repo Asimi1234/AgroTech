@@ -1,0 +1,139 @@
+:root {
+  --dur-fast: 200ms;
+  --dur-base: 400ms;
+  --dur-slow: 600ms;
+  --ease-standard: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --lift-shadow: 0 12px 28px -16px rgba(21, 60, 34, 0.35);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.hover-lift {
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--lift-shadow);
+}
+
+.icon-scale {
+  transition: transform var(--dur-fast) var(--ease-standard);
+}
+
+.icon-scale-host:hover .icon-scale {
+  transform: scale(1.1);
+}
+
+.cta-deepen {
+  transition:
+    background-color var(--dur-fast) var(--ease-standard),
+    color var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+
+.cta-deepen:hover {
+  box-shadow: var(--lift-shadow);
+}
+
+.quote-underline {
+  position: relative;
+  display: inline;
+}
+
+.quote-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms var(--ease-standard);
+}
+
+.quote-card:hover .quote-underline::after {
+  transform: scaleX(1);
+}
+
+.bar-fill {
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: bar-grow var(--dur-slow) var(--ease-out) forwards;
+  will-change: transform;
+}
+
+@keyframes bar-grow {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+  z-index: 60;
+}
+
+.progress-fill {
+  transform: scaleX(0);
+  transform-origin: left;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .hover-lift,
+  .icon-scale,
+  .cta-deepen,
+  .quote-underline::after {
+    transition: none;
+  }
+
+  .bar-fill {
+    animation: none;
+    transform: none;
+  }
+
+  .hover-lift:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .icon-scale-host:hover .icon-scale {
+    transform: none;
+  }
+
+  .quote-card:hover .quote-underline::after {
+    transform: scaleX(1);
+  }
+}

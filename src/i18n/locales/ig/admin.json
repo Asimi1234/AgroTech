@@ -1,0 +1,62 @@
+{
+  "title": "Peeji Nchịkwa",
+  "subtitle": "Jikwaa data ntụaka ma nyochaa ọrụ platfọm.",
+  "prices": {
+    "title": "Ọnụ ahịa Ngwaahịa",
+    "edit": "Dezie ọnụ ahịa",
+    "cancel": "Kagbuo",
+    "save": "Chekwaa mgbanwe",
+    "saved": "Echekwara mgbanwe na nnọkọ a. A ga-agbakwunye nchekwa na Usoro 2.",
+    "colCommodity": "Ngwaahịa",
+    "colUnit": "Nha",
+    "colPrice": "Ọnụ ahịa",
+    "colChange": "Mgbanwe"
+  },
+  "weather": {
+    "title": "Data Ihu Igwe",
+    "colRegion": "Mpaghara",
+    "colTemp": "Okpomọkụ",
+    "colHumidity": "Iru mmiri",
+    "colUpdated": "Emelitere"
+  },
+  "users": {
+    "title": "Ndị ọrụ",
+    "active": "{{count}} na-arụ ọrụ",
+    "colName": "Aha",
+    "colRole": "Ọkwa",
+    "colRegion": "Mpaghara",
+    "colLastActive": "Ọrụ ikpeazụ",
+    "colStatus": "Ọnọdụ",
+    "statusActive": "Na-arụ ọrụ",
+    "statusInactive": "Anaghị arụ ọrụ"
+  },
+  "advisories": {
+    "title": "Ndụmọdụ Ọrụ Ugbo",
+    "subtitle": "Nduzi a na-egosi ndị ọrụ ugbo na peeji ha.",
+    "add": "Tinye ndụmọdụ",
+    "save": "Chekwaa",
+    "cancel": "Kagbuo",
+    "editAction": "Dezie ndụmọdụ",
+    "deleteAction": "Hichapụ ndụmọdụ",
+    "fieldTitle": "Isiokwu",
+    "fieldWindow": "Oge mmezu",
+    "fieldCrop": "Ihe ọkụkụ",
+    "fieldSeverity": "Ịdị mkpa",
+    "fieldDetail": "Nkọwa nduzi",
+    "sev": { "info": "Nduzi", "action": "Achọrọ ime ihe", "warning": "Ịdọ aka ná ntị" },
+    "persistNote": "Mgbanwe na-arụ ọrụ na nnọkọ a ma rute peeji onye ọrụ ugbo. A ga-agbakwunye nchekwa na Usoro 2."
+  },
+  "analytics": {
+    "totalUsers": "Ngụkọta ndị ọrụ",
+    "activeCount": "{{count}} na-arụ ọrụ",
+    "totalListings": "Ndepụta ahịa",
+    "listingsHint": "N'ọtụtụ ụdị niile",
+    "cooperatives": "Òtù nkwekọ",
+    "cooperativesHint": "Òtù edebanyere aha",
+    "members": "Ndị òtù",
+    "membersHint": "N'òtù niile",
+    "byCategory": "Ndepụta site n'ụdị",
+    "byRegion": "Ndị ọrụ site na mpaghara",
+    "error": "Enweghị ike ibudata nyocha."
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "title": "Ọjà",
+  "subtitle": "Ohun-ọ̀gbìn, ohun-èlò, àti ọjà oko láti ọ̀dọ̀ àwọn olùpèsè tí a ti fọwọ́sí.",
+  "filters": {
+    "search": "Wá ọjà tàbí olùpèsè",
+    "cropType": "Irú irúgbìn",
+    "allCrops": "Gbogbo irúgbìn",
+    "location": "Ibùdó",
+    "allRegions": "Gbogbo agbègbè",
+    "sortBy": "Ṣètò nípa",
+    "maxPrice": "Iye tó ga jù",
+    "reset": "Tún àwọn àlẹ̀mọ́ ṣe",
+    "results_one": "Àbájáde {{count}}",
+    "results_other": "Àbájáde {{count}}"
+  },
+  "sort": {
+    "newest": "Tuntun",
+    "priceAsc": "Iye: kékeré sí ńlá",
+    "priceDesc": "Iye: ńlá sí kékeré",
+    "rating": "Ìdíwọ̀n tó ga jù"
+  },
+  "card": { "viewDetails": "Wo Kúlẹ̀kúlẹ̀", "outOfStock": "Kò sí ní ìṣúra" },
+  "categories": {
+    "seed": "Irúgbìn",
+    "fertilizer": "Ajílẹ̀",
+    "equipment": "Ohun-èlò",
+    "crop-protection": "Ààbò irúgbìn",
+    "produce": "Ọjà oko"
+  },
+  "empty": {
+    "title": "Kò sí ọjà tó bá àwọn àlẹ̀mọ́ rẹ mu",
+    "message": "Gbìyànjú láti fẹ̀ iye sí i, yan irúgbìn mìíràn, tàbí pa àwọn àlẹ̀mọ́ rẹ́.",
+    "clear": "Pa àwọn àlẹ̀mọ́ rẹ́"
+  },
+  "feed": {
+    "showing": "Ń fi {{shown}} nínú {{total}} ọjà hàn",
+    "all": "Gbogbo ọjà {{total}} ni a fihàn",
+    "loadingMore": "Ń gbé ọjà mìíràn wọlé"
+  }
+}

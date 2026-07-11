@@ -1,0 +1,17 @@
+{
+  "back": "Laghachi na Ahịa",
+  "inStock": "Ọ dị",
+  "outOfStock": "Ọ dịghị",
+  "sendInquiry": "Zipu ajụjụ",
+  "inquirySent": "Ezipuola ajụjụ",
+  "inquiryNote": "E dekọrọ ajụjụ gị. Na Usoro 2 nke a ga-agwa onye na-eweta ozugbo. Ugbu a, kpọọ {{phone}}.",
+  "callSupplier": "Kpọọ onye na-eweta · {{phone}}",
+  "supplier": "Onye na-eweta",
+  "priceTrend": "Ọnọdụ Ọnụ ahịa",
+  "priceTrendSubtitle": "Ọnụ ahịa kwa ụbọchị n'ime ụbọchị 30 gara aga",
+  "days30": "Ụbọchị 30",
+  "chartAria": "Eserese ahịrị nke ọnụ ahịa kwa ụbọchị n'ime ụbọchị 30 gara aga",
+  "reviews": "Nyocha",
+  "reviewCount_one": "Nyocha {{count}}",
+  "reviewCount_other": "Nyocha {{count}}"
+}

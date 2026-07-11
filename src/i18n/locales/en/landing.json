@@ -1,0 +1,74 @@
+{
+  "nav": { "why": "Why OjàFarm", "how": "How it works", "features": "Features", "stories": "Stories" },
+  "header": { "signIn": "Sign in", "signUpFree": "Sign up free" },
+  "hero": {
+    "badge": "Works on any phone — app, SMS & USSD",
+    "line1": "Better prices.",
+    "line2": "Better crops.",
+    "line3": "Better lives.",
+    "subtitle": "OjàFarm connects small-scale Nigerian farmers directly with input suppliers, aggregators and buyers — sell for more, buy for less, grow with confidence.",
+    "ctaFarmer": "Sign up as a farmer",
+    "ctaSupplier": "Sign up as a supplier",
+    "todaysPrices": "Today's prices",
+    "live": "Live"
+  },
+  "stats": { "farmers": "Farmers onboard", "states": "States covered", "priceGain": "Avg. price gain" },
+  "why": {
+    "label": "Why OjàFarm",
+    "heading": "Real problems small-scale farmers face — and how we fix them",
+    "problemTag": "Problem",
+    "solutionTag": "Solution",
+    "items": [
+      { "problem": "Farmers lack market access", "solution": "Direct connection to verified buyers and aggregators near you." },
+      { "problem": "Outdated farming information", "solution": "Weather and crop-price alerts tailored to what you grow." },
+      { "problem": "Weak bargaining power", "solution": "Cooperative pricing and bulk-order tools that lift your leverage." }
+    ]
+  },
+  "how": {
+    "label": "How it works",
+    "heading": "From sign-up to a stronger business in four steps",
+    "step": "Step",
+    "items": [
+      { "title": "Sign up", "detail": "Create an account as a farmer or supplier in minutes." },
+      { "title": "Browse or list", "detail": "See live prices, or list your products for buyers to find." },
+      { "title": "Connect directly", "detail": "Reach the other side by phone or SMS — no middlemen." },
+      { "title": "Grow", "detail": "Sell for more, buy for less, and build a track record." }
+    ]
+  },
+  "features": {
+    "label": "Features",
+    "heading": "Everything you need in one place",
+    "items": [
+      { "title": "Crop price updates", "detail": "Daily commodity prices for cassava, maize, oil palm and rice." },
+      { "title": "Local weather alerts", "detail": "Five-day rainfall and temperature forecasts for your region." },
+      { "title": "Farming advisories", "detail": "Guidance tied to the crop calendar and pest pressure." },
+      { "title": "Cooperative groups", "detail": "Coordinate inputs, storage and bulk sales with your peers." },
+      { "title": "Direct contact", "detail": "Call suppliers and buyers straight from every listing." },
+      { "title": "Ratings & reviews", "detail": "Trade with confidence using transparent supplier ratings." }
+    ]
+  },
+  "stories": {
+    "label": "Stories",
+    "heading": "Trusted by farmers and traders across Nigeria",
+    "items": [
+      { "quote": "I now sell my cassava to a processor directly. My income is up and I skip the middlemen.", "role": "Cassava farmer · Oyo" },
+      { "quote": "Price alerts tell me exactly when to hold my grain. Last season that alone paid off.", "role": "Maize aggregator · Kaduna" },
+      { "quote": "The cooperative tools let our group share a digester and market oil together.", "role": "Palm oil miller · Cross River" }
+    ]
+  },
+  "cta": {
+    "heading": "Ready to grow?",
+    "subtitle": "Join thousands of farmers and suppliers trading smarter on OjàFarm. Signing up is free and works on any phone.",
+    "farmer": "Start as a farmer",
+    "supplier": "Become a supplier",
+    "seeHow": "See how it works"
+  },
+  "footer": {
+    "tagline": "Connecting Nigerian farmers with input suppliers, aggregators, and buyers.",
+    "about": "About",
+    "features": "Features",
+    "stories": "Stories",
+    "signIn": "Sign in",
+    "rights": "© 2026 OjàFarm. All rights reserved."
+  }
+}

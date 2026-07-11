@@ -1,0 +1,74 @@
+{
+  "nav": { "why": "Gịnị mere OjàFarm", "how": "Otú ọ si arụ ọrụ", "features": "Njirimara", "stories": "Akụkọ" },
+  "header": { "signIn": "Banye", "signUpFree": "Debanye aha n'efu" },
+  "hero": {
+    "badge": "Ọ na-arụ ọrụ na ekwentị ọ bụla — app, SMS na USSD",
+    "line1": "Ọnụ ahịa ka mma.",
+    "line2": "Ihe ubi ka mma.",
+    "line3": "Ndụ ka mma.",
+    "subtitle": "OjàFarm na-ejikọ ndị obere ọrụ ugbo Naịjịrịa na ndị na-eweta ngwa ọrụ, ndị na-anakọta na ndị na-azụ ahịa ozugbo — ree karịa, zụta ọnụ ala, too n’obi ike.",
+    "ctaFarmer": "Debanye aha dịka onye ọrụ ugbo",
+    "ctaSupplier": "Debanye aha dịka onye na-eweta",
+    "todaysPrices": "Ọnụ ahịa taa",
+    "live": "Dị ndụ"
+  },
+  "stats": { "farmers": "Ndị ọrụ ugbo sonyere", "states": "Steeti anyị kpuchiri", "priceGain": "Nkezi uru ọnụ ahịa" },
+  "why": {
+    "label": "Gịnị mere OjàFarm",
+    "heading": "Nsogbu ndị obere ọrụ ugbo na-eche — na otú anyị si edozi ha",
+    "problemTag": "Nsogbu",
+    "solutionTag": "Ngwọta",
+    "items": [
+      { "problem": "Ndị ọrụ ugbo enweghị ohere ahịa", "solution": "Njikọ ozugbo na ndị na-azụ ahịa na ndị na-anakọta a pụrụ ịtụkwasị obi dị nso gị." },
+      { "problem": "Ozi ọrụ ugbo mere ochie", "solution": "Ọkwa ihu igwe na ọnụ ahịa ihe ubi dabeere n'ihe ị na-akụ." },
+      { "problem": "Ike mkparịta ụka na-adịghị ike", "solution": "Ọnụ ahịa nkwekọ na ngwá ọrụ iji zụta n'ọtụtụ nke na-ebuli ike gị." }
+    ]
+  },
+  "how": {
+    "label": "Otú ọ si arụ ọrụ",
+    "heading": "Site na ndebanye aha ruo azụmahịa siri ike n'usoro anọ",
+    "step": "Nzọụkwụ",
+    "items": [
+      { "title": "Debanye aha", "detail": "Mepụta akaụntụ dịka onye ọrụ ugbo ma ọ bụ onye na-eweta n'ime nkeji ole na ole." },
+      { "title": "Chọgharịa ma ọ bụ depụta", "detail": "Lee ọnụ ahịa dị ndụ, ma ọ bụ depụta ngwaahịa gị ka ndị na-azụ hụ ha." },
+      { "title": "Jikọọ ozugbo", "detail": "Ruo n’akụkụ nke ọzọ site na ekwentị ma ọ bụ SMS — enweghị onye ọgbọ." },
+      { "title": "Too", "detail": "Ree karịa, zụta ọnụ ala, ma wuo akụkọ ọrụ." }
+    ]
+  },
+  "features": {
+    "label": "Njirimara",
+    "heading": "Ihe niile ị chọrọ n'otu ebe",
+    "items": [
+      { "title": "Mmelite ọnụ ahịa ihe ubi", "detail": "Ọnụ ahịa ngwaahịa kwa ụbọchị maka akpụ, ọka, nkwụ na osikapa." },
+      { "title": "Ọkwa ihu igwe mpaghara", "detail": "Amụma mmiri ozuzo na okpomọkụ ụbọchị ise maka mpaghara gị." },
+      { "title": "Ndụmọdụ ọrụ ugbo", "detail": "Nduzi jikọtara na kalenda ihe ọkụkụ na nrịba ụmụ ahụhụ." },
+      { "title": "Òtù nkwekọ", "detail": "Hazie ihe eji arụ ọrụ, nchekwa na ire ere n'ọtụtụ ya na ndị ọgbọ gị." },
+      { "title": "Kpọtụrụ ozugbo", "detail": "Kpọọ ndị na-eweta na ndị na-azụ ozugbo site na ndepụta ọ bụla." },
+      { "title": "Ọkwa na nyocha", "detail": "Zụọ ahịa n'obi ike site n'iji ọkwa ndị na-eweta doro anya." }
+    ]
+  },
+  "stories": {
+    "label": "Akụkọ",
+    "heading": "Ndị ọrụ ugbo na ndị ahịa gafee Naịjịrịa tụkwasịrị anyị obi",
+    "items": [
+      { "quote": "Ana m eree akpụ m ozugbo nye onye na-ahazi ya ugbu a. Ego m na-enweta abawanyela, m na-ezerekwa ndị ọgbọ.", "role": "Onye ọrụ ugbo akpụ · Oyo" },
+      { "quote": "Ọkwa ọnụ ahịa na-agwa m mgbe kwesịrị ijide ọka m. N'oge gara aga, naanị nke ahụ kwụrụ ụgwọ.", "role": "Onye na-anakọta ọka · Kaduna" },
+      { "quote": "Ngwá ọrụ nkwekọ mere ka òtù anyị kesaa igwe ma ree mmanụ ọnụ.", "role": "Onye na-akwọ mmanụ nkwụ · Cross River" }
+    ]
+  },
+  "cta": {
+    "heading": "Ị dịla njikere ito?",
+    "subtitle": "Sonyere ọtụtụ puku ndị ọrụ ugbo na ndị na-eweta na-azụ ahịa n'amamihe na OjàFarm. Ndebanye aha bụ n'efu ma na-arụ ọrụ na ekwentị ọ bụla.",
+    "farmer": "Malite dịka onye ọrụ ugbo",
+    "supplier": "Bụrụ onye na-eweta",
+    "seeHow": "Lee otú ọ si arụ ọrụ"
+  },
+  "footer": {
+    "tagline": "Na-ejikọ ndị ọrụ ugbo Naịjịrịa na ndị na-eweta ngwa ọrụ, ndị na-anakọta, na ndị na-azụ ahịa.",
+    "about": "Banyere anyị",
+    "features": "Njirimara",
+    "stories": "Akụkọ",
+    "signIn": "Banye",
+    "rights": "© 2026 OjàFarm. Ekwuru ikike niile."
+  }
+}

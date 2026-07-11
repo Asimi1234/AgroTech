@@ -1,0 +1,17 @@
+{
+  "nav": { "dashboard": "Ilé", "marketplace": "Ọjà", "groups": "Àwọn ẹgbẹ́", "admin": "Ìṣàkóso" },
+  "profile": {
+    "farmer": "Àgbẹ̀",
+    "supplier": "Olùpèsè",
+    "admin": "Alábòójútó",
+    "signOut": "Jáde",
+    "state": "Ìpínlẹ̀"
+  },
+  "error": {
+    "title": "Nǹkan kan ṣàṣìṣe",
+    "body": "Àṣìṣe àìròtẹ́lẹ̀ dá ojú-ìwé yìí dúró. O lè gbìyànjú lẹ́ẹ̀kansi tàbí tún app ṣí.",
+    "retry": "Tún gbìyànjú",
+    "reload": "Tún app ṣí"
+  },
+  "loadError": { "title": "Kò lè gbé dátà wọlé", "retry": "Gbìyànjú lẹ́ẹ̀kansi" }
+}

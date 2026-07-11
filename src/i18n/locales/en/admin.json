@@ -1,0 +1,62 @@
+{
+  "title": "Admin Dashboard",
+  "subtitle": "Manage reference data and monitor platform activity.",
+  "prices": {
+    "title": "Commodity Prices",
+    "edit": "Edit prices",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "saved": "Changes saved in this session. Persistence is added in Phase 2.",
+    "colCommodity": "Commodity",
+    "colUnit": "Unit",
+    "colPrice": "Price",
+    "colChange": "Change"
+  },
+  "weather": {
+    "title": "Weather Data",
+    "colRegion": "Region",
+    "colTemp": "Temp",
+    "colHumidity": "Humidity",
+    "colUpdated": "Updated"
+  },
+  "users": {
+    "title": "Users",
+    "active": "{{count}} active",
+    "colName": "Name",
+    "colRole": "Role",
+    "colRegion": "Region",
+    "colLastActive": "Last active",
+    "colStatus": "Status",
+    "statusActive": "Active",
+    "statusInactive": "Inactive"
+  },
+  "advisories": {
+    "title": "Crop Advisories",
+    "subtitle": "Guidance shown to farmers on their dashboard.",
+    "add": "Add advisory",
+    "save": "Save",
+    "cancel": "Cancel",
+    "editAction": "Edit advisory",
+    "deleteAction": "Delete advisory",
+    "fieldTitle": "Title",
+    "fieldWindow": "Timing window",
+    "fieldCrop": "Crop",
+    "fieldSeverity": "Severity",
+    "fieldDetail": "Guidance detail",
+    "sev": { "info": "Guidance", "action": "Action needed", "warning": "Warning" },
+    "persistNote": "Changes apply this session and reach the farmer dashboard. Persistence arrives in Phase 2."
+  },
+  "analytics": {
+    "totalUsers": "Total users",
+    "activeCount": "{{count}} active",
+    "totalListings": "Marketplace listings",
+    "listingsHint": "Across all categories",
+    "cooperatives": "Cooperatives",
+    "cooperativesHint": "Registered groups",
+    "members": "Cooperative members",
+    "membersHint": "Across all groups",
+    "byCategory": "Listings by category",
+    "byRegion": "Users by region",
+    "error": "Couldn't load analytics."
+  }
+}

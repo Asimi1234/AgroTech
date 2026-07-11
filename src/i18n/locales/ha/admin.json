@@ -1,0 +1,62 @@
+{
+  "title": "Shafin Gudanarwa",
+  "subtitle": "Sarrafa bayanan tushe da sa ido kan ayyukan dandamali.",
+  "prices": {
+    "title": "Farashin Kayayyaki",
+    "edit": "Gyara farashi",
+    "cancel": "Soke",
+    "save": "Ajiye canje-canje",
+    "saved": "An ajiye canje-canje a wannan zaman. Za a ƙara adanawa a Mataki na 2.",
+    "colCommodity": "Kaya",
+    "colUnit": "Ma'auni",
+    "colPrice": "Farashi",
+    "colChange": "Canji"
+  },
+  "weather": {
+    "title": "Bayanan Yanayi",
+    "colRegion": "Yanki",
+    "colTemp": "Zafi",
+    "colHumidity": "Danshi",
+    "colUpdated": "An sabunta"
+  },
+  "users": {
+    "title": "Masu amfani",
+    "active": "{{count}} masu aiki",
+    "colName": "Suna",
+    "colRole": "Matsayi",
+    "colRegion": "Yanki",
+    "colLastActive": "Aiki na ƙarshe",
+    "colStatus": "Matsayi",
+    "statusActive": "Mai aiki",
+    "statusInactive": "Ba ya aiki"
+  },
+  "advisories": {
+    "title": "Shawarwarin Noma",
+    "subtitle": "Ja-gorar da ake nunawa manoma a shafinsu.",
+    "add": "Ƙara shawara",
+    "save": "Ajiye",
+    "cancel": "Soke",
+    "editAction": "Gyara shawara",
+    "deleteAction": "Share shawara",
+    "fieldTitle": "Take",
+    "fieldWindow": "Lokacin aiwatarwa",
+    "fieldCrop": "Amfanin gona",
+    "fieldSeverity": "Muhimmanci",
+    "fieldDetail": "Cikakken ja-gora",
+    "sev": { "info": "Ja-gora", "action": "Ana buƙatar mataki", "warning": "Gargaɗi" },
+    "persistNote": "Canje-canje na aiki a wannan zaman kuma sun kai shafin manomi. Za a ƙara adanawa a Mataki na 2."
+  },
+  "analytics": {
+    "totalUsers": "Jimlar masu amfani",
+    "activeCount": "{{count}} masu aiki",
+    "totalListings": "Jerin kasuwa",
+    "listingsHint": "A dukkan rukunoni",
+    "cooperatives": "Ƙungiyoyi",
+    "cooperativesHint": "Ƙungiyoyin da aka yi rajista",
+    "members": "Mambobin ƙungiya",
+    "membersHint": "A dukkan ƙungiyoyi",
+    "byCategory": "Jeri bisa rukuni",
+    "byRegion": "Masu amfani bisa yanki",
+    "error": "An kasa loda bincike."
+  }
+}

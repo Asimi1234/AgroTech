@@ -1,0 +1,12 @@
+{
+  "name": "OjàFarm",
+  "short_name": "OjàFarm",
+  "description": "Connecting Nigerian farmers with input suppliers, aggregators, and buyers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f7f3",
+  "theme_color": "#1c5b2e",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

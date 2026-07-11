@@ -1,0 +1,40 @@
+{
+  "title": "Kasuwa",
+  "subtitle": "Kayan shigarwa, kayan aiki, da amfanin gona daga amintattun masu sayarwa.",
+  "filters": {
+    "search": "Nemi kayayyaki ko masu sayarwa",
+    "cropType": "Nau'in gona",
+    "allCrops": "Dukan gonaki",
+    "location": "Wuri",
+    "allRegions": "Dukan yankuna",
+    "sortBy": "Jera bisa",
+    "maxPrice": "Farashi mafi girma",
+    "reset": "Sake saita tacewa",
+    "results_one": "Sakamako {{count}}",
+    "results_other": "Sakamako {{count}}"
+  },
+  "sort": {
+    "newest": "Sabbi",
+    "priceAsc": "Farashi: ƙasa zuwa sama",
+    "priceDesc": "Farashi: sama zuwa ƙasa",
+    "rating": "Mafi girman ƙima"
+  },
+  "card": { "viewDetails": "Duba Cikakke", "outOfStock": "Babu a hannu" },
+  "categories": {
+    "seed": "Iri",
+    "fertilizer": "Taki",
+    "equipment": "Kayan aiki",
+    "crop-protection": "Kariyar gona",
+    "produce": "Amfanin gona"
+  },
+  "empty": {
+    "title": "Babu kayayyakin da suka dace da tacewarka",
+    "message": "Gwada faɗaɗa farashin, zaɓi wata gona, ko share tacewa.",
+    "clear": "Share tacewa"
+  },
+  "feed": {
+    "showing": "Ana nuna {{shown}} daga cikin {{total}} kayayyaki",
+    "all": "An nuna dukan kayayyaki {{total}}",
+    "loadingMore": "Ana loda ƙarin kayayyaki"
+  }
+}

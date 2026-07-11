@@ -1,0 +1,39 @@
+{
+  "welcome": "Nnọọ, {{name}}",
+  "subtitle": "Ọnụ ahịa gị, ihu igwe, na ndụmọdụ ọrụ ugbo n'otu ebe.",
+  "stats": {
+    "listings": "Ndepụta ahịa",
+    "listingsHint": "Dị ugbu a",
+    "topMover": "Mgbanwe ọnụ ahịa kachasị",
+    "advisories": "Ndụmọdụ ị ga-eme",
+    "advisoriesHint": "Ime ihe ma ọ bụ ịdọ aka ná ntị",
+    "myGroups": "Òtù m",
+    "myGroupsHint": "Lee òtù",
+    "error": "Enweghị ike ibudata ọnụọgụ gị."
+  },
+  "quicklinks": {
+    "marketplace": "Chọgharịa Ahịa",
+    "marketplaceDesc": "Chọta mkpụrụ, fatalaịza, akụrụngwa na ndị na-azụ ahịa",
+    "groups": "Òtù M",
+    "groupsDesc": "Jikọọ na òtù gị"
+  },
+  "prices": { "title": "Ọnụ ahịa Ngwaahịa", "today": "Taa" },
+  "weather": {
+    "title": "Amụma Ihu Igwe",
+    "humidity": "Iru mmiri {{value}}%",
+    "updated": "Emelitere {{time}}",
+    "state": "Steeti",
+    "conditions": {
+      "sunny": "Anwụ",
+      "partlyCloudy": "Igwe ojii ntakịrị",
+      "cloudy": "Igwe ojii",
+      "rain": "Mmiri ozuzo",
+      "storm": "Oke ifufe"
+    }
+  },
+  "advisories": {
+    "title": "Ndụmọdụ Ọrụ Ugbo",
+    "subtitle": "Jikọtara na kalenda ihe ọkụkụ ugbu a",
+    "severity": { "info": "Nduzi", "action": "Achọrọ ime ihe", "warning": "Ịdọ aka ná ntị" }
+  }
+}

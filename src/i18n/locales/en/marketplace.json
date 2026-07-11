@@ -1,0 +1,40 @@
+{
+  "title": "Marketplace",
+  "subtitle": "Inputs, equipment, and produce from verified suppliers.",
+  "filters": {
+    "search": "Search products or suppliers",
+    "cropType": "Crop type",
+    "allCrops": "All crops",
+    "location": "Location",
+    "allRegions": "All regions",
+    "sortBy": "Sort by",
+    "maxPrice": "Max price",
+    "reset": "Reset filters",
+    "results_one": "{{count}} result",
+    "results_other": "{{count}} results"
+  },
+  "sort": {
+    "newest": "Newest",
+    "priceAsc": "Price: low to high",
+    "priceDesc": "Price: high to low",
+    "rating": "Highest rated"
+  },
+  "card": { "viewDetails": "View Details", "outOfStock": "Out of stock" },
+  "categories": {
+    "seed": "Seed",
+    "fertilizer": "Fertilizer",
+    "equipment": "Equipment",
+    "crop-protection": "Crop protection",
+    "produce": "Produce"
+  },
+  "empty": {
+    "title": "No products match your filters",
+    "message": "Try widening the price range, choosing a different crop, or clearing filters.",
+    "clear": "Clear filters"
+  },
+  "feed": {
+    "showing": "Showing {{shown}} of {{total}} products",
+    "all": "All {{total}} products shown",
+    "loadingMore": "Loading more products"
+  }
+}

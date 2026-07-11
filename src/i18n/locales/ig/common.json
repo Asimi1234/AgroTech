@@ -1,0 +1,17 @@
+{
+  "nav": { "dashboard": "Ụlọ", "marketplace": "Ahịa", "groups": "Òtù", "admin": "Nchịkwa" },
+  "profile": {
+    "farmer": "Onye ọrụ ugbo",
+    "supplier": "Onye na-eweta",
+    "admin": "Onye nchịkwa",
+    "signOut": "Pụọ",
+    "state": "Steeti"
+  },
+  "error": {
+    "title": "Ihe adịghị mma mere",
+    "body": "Njehie a na-atụghị anya ya kwụsịrị ihuenyo a. Ị nwere ike ịnwa ọzọ ma ọ bụ bugharịa ngwa.",
+    "retry": "Nwaa ọzọ",
+    "reload": "Bugharịa ngwa"
+  },
+  "loadError": { "title": "Enweghị ike ibubata data", "retry": "Nwaa ọzọ" }
+}

@@ -1,0 +1,74 @@
+{
+  "nav": { "why": "Kí nìdí OjàFarm", "how": "Bí ó ṣe ń ṣiṣẹ́", "features": "Àwọn ẹ̀yà", "stories": "Àwọn ìtàn" },
+  "header": { "signIn": "Wọlé", "signUpFree": "Forúkọsílẹ̀ ọ̀fẹ́" },
+  "hero": {
+    "badge": "Ó ń ṣiṣẹ́ lórí fóònù èyíkéyìí — app, SMS àti USSD",
+    "line1": "Iye tó dára.",
+    "line2": "Èso tó dára.",
+    "line3": "Ìgbésí ayé tó dára.",
+    "subtitle": "OjàFarm ń so àwọn àgbẹ̀ kékeré ilẹ̀ Nàìjíríà pọ̀ tààrà pẹ̀lú àwọn olùpèsè, olùkójọ àti olùrà — tà fún owó tó pọ̀, rà fún owó tó kéré, dàgbà pẹ̀lú ìgboyà.",
+    "ctaFarmer": "Forúkọsílẹ̀ gẹ́gẹ́ bí àgbẹ̀",
+    "ctaSupplier": "Forúkọsílẹ̀ gẹ́gẹ́ bí olùpèsè",
+    "todaysPrices": "Iye òní",
+    "live": "Ààyè"
+  },
+  "stats": { "farmers": "Àwọn àgbẹ̀ tí wọ́n dara pọ̀", "states": "Àwọn ìpínlẹ̀ tí a bò", "priceGain": "Àpapọ̀ èrè iye" },
+  "why": {
+    "label": "Kí nìdí OjàFarm",
+    "heading": "Àwọn ìṣòro gidi tí àwọn àgbẹ̀ kékeré ń dojúkọ — àti bí a ṣe ń yanjú wọn",
+    "problemTag": "Ìṣòro",
+    "solutionTag": "Ọ̀nà àbáyọ",
+    "items": [
+      { "problem": "Àwọn àgbẹ̀ kò ní ọ̀nà sí ọjà", "solution": "Ìsopọ̀ tààrà sí àwọn olùrà àti olùkójọ tó ṣe ìgbọ́kànlé nítòsí rẹ." },
+      { "problem": "Ìmọ̀ àgbẹ̀ tí ó ti pẹ́", "solution": "Ìkìlọ̀ ojú-ọjọ́ àti iye èso tí a ṣe fún ohun tí o ń gbìn." },
+      { "problem": "Agbára ìdúnàdúrà tí kò lágbára", "solution": "Iye ìfọwọ́sowọ́pọ̀ àti irinṣẹ́ àṣẹ ọ̀pọ̀ tí ń gbé agbára rẹ ga." }
+    ]
+  },
+  "how": {
+    "label": "Bí ó ṣe ń ṣiṣẹ́",
+    "heading": "Láti ìforúkọsílẹ̀ dé òwò tó lágbára ní ìgbésẹ̀ mẹ́rin",
+    "step": "Ìgbésẹ̀",
+    "items": [
+      { "title": "Forúkọsílẹ̀", "detail": "Ṣẹ̀dá àkàǹtì gẹ́gẹ́ bí àgbẹ̀ tàbí olùpèsè ní ìṣẹ́jú díẹ̀." },
+      { "title": "Wò tàbí kójọ", "detail": "Wo iye ààyè, tàbí kójọ àwọn ọjà rẹ fún àwọn olùrà láti rí." },
+      { "title": "Sopọ̀ tààrà", "detail": "Dé ọ̀dọ̀ ẹnìkejì nípa fóònù tàbí SMS — kò sí alárinà." },
+      { "title": "Dàgbà", "detail": "Tà fún owó tó pọ̀, rà fún owó tó kéré, kí o sì kọ́ àkọsílẹ̀." }
+    ]
+  },
+  "features": {
+    "label": "Àwọn ẹ̀yà",
+    "heading": "Gbogbo ohun tí o nílò ní ibì kan",
+    "items": [
+      { "title": "Ìmúdójúìwọ̀n iye èso", "detail": "Iye ọjà lójoojúmọ́ fún ẹ̀gẹ́, àgbàdo, ọ̀pẹ àti ìrẹsì." },
+      { "title": "Ìkìlọ̀ ojú-ọjọ́ agbègbè", "detail": "Àsọtẹ́lẹ̀ òjò àti ìgbóná ọjọ́ márùn-ún fún agbègbè rẹ." },
+      { "title": "Ìmọ̀ràn àgbẹ̀", "detail": "Ìtọ́sọ́nà tó so mọ́ kàlẹ́ńdà irúgbìn àti ìpọ́njú kòkòrò." },
+      { "title": "Àwọn ẹgbẹ́ ìfọwọ́sowọ́pọ̀", "detail": "Ṣàkóso ohun-èlò, ìtọ́jú àti títà ọ̀pọ̀ pẹ̀lú àwọn ẹlẹgbẹ́ rẹ." },
+      { "title": "Ìbánisọ̀rọ̀ tààrà", "detail": "Pe àwọn olùpèsè àti olùrà tààrà láti inú àkọsílẹ̀ kọ̀ọ̀kan." },
+      { "title": "Ìdíwọ̀n àti àtúnyẹ̀wò", "detail": "Ṣòwò pẹ̀lú ìgboyà nípa lílo ìdíwọ̀n olùpèsè tó ṣe kedere." }
+    ]
+  },
+  "stories": {
+    "label": "Àwọn ìtàn",
+    "heading": "Àwọn àgbẹ̀ àti oníṣòwò káàkiri Nàìjíríà gbẹ́kẹ̀lé wa",
+    "items": [
+      { "quote": "Mo ti ń ta ẹ̀gẹ́ mi tààrà sí olùṣàkóso báyìí. Owó tí mo ń rí ti pọ̀ sí i, mo sì yẹra fún alárinà.", "role": "Àgbẹ̀ ẹ̀gẹ́ · Oyo" },
+      { "quote": "Ìkìlọ̀ iye ń sọ fún mi ìgbà gan-an tí màá dá ọkà mi dúró. Àkókò tó kọjá, ìyẹn nìkan san.", "role": "Olùkójọ àgbàdo · Kaduna" },
+      { "quote": "Àwọn irinṣẹ́ ìfọwọ́sowọ́pọ̀ jẹ́ kí ẹgbẹ́ wa pín ẹ̀rọ pọ̀ kí a sì ta òróró papọ̀.", "role": "Olùlọ òróró ọ̀pẹ · Cross River" }
+    ]
+  },
+  "cta": {
+    "heading": "Ṣé o ti ṣetán láti dàgbà?",
+    "subtitle": "Dara pọ̀ mọ́ ẹgbẹẹgbẹ̀rún àwọn àgbẹ̀ àti olùpèsè tí wọ́n ń ṣòwò lọ́gbọ́n lórí OjàFarm. Ìforúkọsílẹ̀ jẹ́ ọ̀fẹ́, ó sì ń ṣiṣẹ́ lórí fóònù èyíkéyìí.",
+    "farmer": "Bẹ̀rẹ̀ gẹ́gẹ́ bí àgbẹ̀",
+    "supplier": "Di olùpèsè",
+    "seeHow": "Wo bí ó ṣe ń ṣiṣẹ́"
+  },
+  "footer": {
+    "tagline": "Ń so àwọn àgbẹ̀ Nàìjíríà pọ̀ pẹ̀lú àwọn olùpèsè, olùkójọ, àti olùrà.",
+    "about": "Nípa wa",
+    "features": "Àwọn ẹ̀yà",
+    "stories": "Àwọn ìtàn",
+    "signIn": "Wọlé",
+    "rights": "© 2026 OjàFarm. Gbogbo ẹ̀tọ́ ni a fi pamọ́."
+  }
+}

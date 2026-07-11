@@ -1,0 +1,17 @@
+{
+  "nav": { "dashboard": "Dashboard", "marketplace": "Marketplace", "groups": "Groups", "admin": "Admin" },
+  "profile": {
+    "farmer": "Farmer",
+    "supplier": "Supplier",
+    "admin": "Administrator",
+    "signOut": "Sign out",
+    "state": "State"
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "An unexpected error interrupted this screen. You can retry or reload the app.",
+    "retry": "Retry",
+    "reload": "Reload app"
+  },
+  "loadError": { "title": "Unable to load data", "retry": "Try again" }
+}

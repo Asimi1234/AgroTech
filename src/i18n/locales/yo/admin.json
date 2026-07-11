@@ -1,0 +1,62 @@
+{
+  "title": "Ojú-ìwé Ìṣàkóso",
+  "subtitle": "Ṣàkóso dátà ìtọ́kasí kí o sì máa ṣọ́ ìgbòkègbodò pẹpẹ.",
+  "prices": {
+    "title": "Iye Ọjà",
+    "edit": "Ṣàtúnṣe iye",
+    "cancel": "Fagilé",
+    "save": "Fi àwọn àyípadà pamọ́",
+    "saved": "A fi àwọn àyípadà pamọ́ ní ìpàdé yìí. A ó fi ìfipamọ́ kún ní Ìpele 2.",
+    "colCommodity": "Ọjà",
+    "colUnit": "Ìwọ̀n",
+    "colPrice": "Iye",
+    "colChange": "Àyípadà"
+  },
+  "weather": {
+    "title": "Dátà Ojú-ọjọ́",
+    "colRegion": "Agbègbè",
+    "colTemp": "Ìgbóná",
+    "colHumidity": "Ọ̀rinrin",
+    "colUpdated": "Ìmúdójúìwọ̀n"
+  },
+  "users": {
+    "title": "Àwọn olùmúlò",
+    "active": "{{count}} tí ń ṣiṣẹ́",
+    "colName": "Orúkọ",
+    "colRole": "Ipò",
+    "colRegion": "Agbègbè",
+    "colLastActive": "Iṣẹ́ ìkẹyìn",
+    "colStatus": "Ipò",
+    "statusActive": "Ń ṣiṣẹ́",
+    "statusInactive": "Kò ṣiṣẹ́"
+  },
+  "advisories": {
+    "title": "Ìmọ̀ràn Àgbẹ̀",
+    "subtitle": "Ìtọ́sọ́nà tí a ń fi hàn àwọn àgbẹ̀ ní ojú-ìwé wọn.",
+    "add": "Fi ìmọ̀ràn kún",
+    "save": "Fi pamọ́",
+    "cancel": "Fagilé",
+    "editAction": "Ṣàtúnṣe ìmọ̀ràn",
+    "deleteAction": "Pa ìmọ̀ràn rẹ́",
+    "fieldTitle": "Àkọlé",
+    "fieldWindow": "Àkókò ìṣe",
+    "fieldCrop": "Irúgbìn",
+    "fieldSeverity": "Ìwọ̀n pàtàkì",
+    "fieldDetail": "Àlàyé ìtọ́sọ́nà",
+    "sev": { "info": "Ìtọ́sọ́nà", "action": "Ìgbésẹ̀ pọn dandan", "warning": "Ìkìlọ̀" },
+    "persistNote": "Àwọn àyípadà ṣiṣẹ́ ní ìpàdé yìí, wọ́n sì dé ojú-ìwé àgbẹ̀. A ó fi ìfipamọ́ kún ní Ìpele 2."
+  },
+  "analytics": {
+    "totalUsers": "Àpapọ̀ olùmúlò",
+    "activeCount": "{{count}} tí ń ṣiṣẹ́",
+    "totalListings": "Àkọsílẹ̀ ọjà",
+    "listingsHint": "Kọjá gbogbo ẹ̀ka",
+    "cooperatives": "Àwọn ẹgbẹ́ ìfọwọ́sowọ́pọ̀",
+    "cooperativesHint": "Àwọn ẹgbẹ́ tí a forúkọ sílẹ̀",
+    "members": "Àwọn ọmọ ẹgbẹ́",
+    "membersHint": "Kọjá gbogbo ẹgbẹ́",
+    "byCategory": "Àkọsílẹ̀ nípa ẹ̀ka",
+    "byRegion": "Olùmúlò nípa agbègbè",
+    "error": "Kò lè ṣí ìtúpalẹ̀."
+  }
+}

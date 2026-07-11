@@ -1,0 +1,39 @@
+{
+  "welcome": "Káàbọ̀, {{name}}",
+  "subtitle": "Iye rẹ, ojú-ọjọ́, àti ìmọ̀ràn àgbẹ̀ ní ojú kan.",
+  "stats": {
+    "listings": "Àkọsílẹ̀ ọjà",
+    "listingsHint": "Wà ní ìṣura báyìí",
+    "topMover": "Ìyípadà iye tó ga jù",
+    "advisories": "Ìmọ̀ràn láti gbé ìgbésẹ̀",
+    "advisoriesHint": "Ìgbésẹ̀ tàbí ìkìlọ̀",
+    "myGroups": "Àwọn ẹgbẹ́ mi",
+    "myGroupsHint": "Wo àwọn ẹgbẹ́",
+    "error": "Kò lè ṣí ìṣirò rẹ."
+  },
+  "quicklinks": {
+    "marketplace": "Ṣàwárí Ọjà",
+    "marketplaceDesc": "Wá irúgbìn, ajílẹ̀, ohun-èlò àti olùrà",
+    "groups": "Àwọn Ẹgbẹ́ Mi",
+    "groupsDesc": "Ṣàjọpọ̀ pẹ̀lú àwọn ẹgbẹ́ rẹ"
+  },
+  "prices": { "title": "Iye Ọjà", "today": "Òní" },
+  "weather": {
+    "title": "Àsọtẹ́lẹ̀ Ojú-ọjọ́",
+    "humidity": "Ọ̀rinrin {{value}}%",
+    "updated": "Ìmúdójúìwọ̀n {{time}}",
+    "state": "Ìpínlẹ̀",
+    "conditions": {
+      "sunny": "Oòrùn",
+      "partlyCloudy": "Àwọsánmà díẹ̀",
+      "cloudy": "Àwọsánmà",
+      "rain": "Òjò",
+      "storm": "Ìjì"
+    }
+  },
+  "advisories": {
+    "title": "Ìmọ̀ràn Àgbẹ̀",
+    "subtitle": "Ní ìbámu pẹ̀lú kàlẹ́ńdà irúgbìn lọ́wọ́lọ́wọ́",
+    "severity": { "info": "Ìtọ́sọ́nà", "action": "Ìgbésẹ̀ pọn dandan", "warning": "Ìkìlọ̀" }
+  }
+}

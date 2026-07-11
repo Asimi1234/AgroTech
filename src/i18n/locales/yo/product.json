@@ -1,0 +1,17 @@
+{
+  "back": "Padà sí Ọjà",
+  "inStock": "Ó wà ní ìṣúra",
+  "outOfStock": "Kò sí ní ìṣúra",
+  "sendInquiry": "Fi ìbéèrè ránṣẹ́",
+  "inquirySent": "A ti fi ìbéèrè ránṣẹ́",
+  "inquiryNote": "A ti gba ìbéèrè rẹ sílẹ̀. Ní Ìpele 2 èyí yóò sọ fún olùpèsè tààrà. Fún báyìí, pe {{phone}}.",
+  "callSupplier": "Pe olùpèsè · {{phone}}",
+  "supplier": "Olùpèsè",
+  "priceTrend": "Ìṣesí Iye",
+  "priceTrendSubtitle": "Iye ojoojúmọ́ ní ọjọ́ 30 sẹ́yìn",
+  "days30": "Ọjọ́ 30",
+  "chartAria": "Àwòrán ìlà ti iye ojoojúmọ́ ní ọjọ́ 30 sẹ́yìn",
+  "reviews": "Àwọn àtúnyẹ̀wò",
+  "reviewCount_one": "Àtúnyẹ̀wò {{count}}",
+  "reviewCount_other": "Àwọn àtúnyẹ̀wò {{count}}"
+}
