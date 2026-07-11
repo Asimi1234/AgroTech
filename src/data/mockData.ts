@@ -15,6 +15,54 @@ import type {
 import { placeholderImage } from './placeholderImage';
 import { catalogCategory, catalogCrop, catalogRegion } from '@/i18n/catalog';
 
+/**
+ * Deterministic pseudo-random dates so activity timestamps (inquiries, reviews,
+ * last-active, group messages) read as spread across the platform's history —
+ * roughly Nov 2025 up to "today" — instead of all clustering on one day. Seeded
+ * so they stay stable across reloads rather than reshuffling each refresh.
+ */
+const SPREAD_START = new Date('2025-11-01T00:00:00').getTime();
+const SPREAD_END = new Date('2026-07-11T00:00:00').getTime();
+
+const rand01 = (seed: number): number => {
+  let t = (seed + 0x6d2b79f5) | 0;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+const pad2 = (n: number): string => String(n).padStart(2, '0');
+
+const fmtDate = (d: Date): string =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+const spreadDate = (seed: number): string =>
+  fmtDate(new Date(SPREAD_START + rand01(seed) * (SPREAD_END - SPREAD_START)));
+
+const spreadDateTime = (seed: number): string => {
+  const day = new Date(SPREAD_START + rand01(seed) * (SPREAD_END - SPREAD_START));
+  const hour = 7 + Math.floor(rand01(seed * 7 + 1) * 12); // 07–18
+  const minute = Math.floor(rand01(seed * 13 + 5) * 60);
+  return `${fmtDate(day)} ${pad2(hour)}:${pad2(minute)}`;
+};
+
+/**
+ * Timestamp for message `msgIndex` within a group thread: a random base date per
+ * thread, then messages spaced a few hours apart so each conversation stays in
+ * chronological order.
+ */
+const threadTimestamp = (
+  coopIndex: number,
+  msgIndex: number,
+  total: number,
+): string => {
+  const room = SPREAD_END - SPREAD_START - total * 6 * 3_600_000;
+  const base = SPREAD_START + rand01(500 + coopIndex) * room;
+  const gapHours = 2 + Math.floor(rand01(coopIndex * 17 + msgIndex) * 5);
+  const day = new Date(base + msgIndex * gapHours * 3_600_000);
+  return `${fmtDate(day)} ${pad2(day.getHours())}:${pad2(day.getMinutes())}`;
+};
+
 export const crops: CropInfo[] = [
   { id: 'cassava', label: 'Cassava' },
   { id: 'maize', label: 'Maize' },
@@ -139,10 +187,10 @@ const buildPriceHistory = (base: number): { date: string; price: number }[] => {
 
 const reviewsBank: Record<string, ProductDetail['reviews']> = {
   default: [
-    { id: 'r1', author: 'Musa I.', rating: 5, date: '2026-06-28', comment: 'Delivered on time and exactly as described. Will order again.' },
-    { id: 'r2', author: 'Ngozi A.', rating: 4, date: '2026-06-15', comment: 'Good quality, though packaging could be sturdier.' },
-    { id: 'r3', author: 'Yakubu D.', rating: 5, date: '2026-05-30', comment: 'Supplier answered all my questions before I paid. Trustworthy.' },
-  ],
+    { id: 'r1', author: 'Musa I.', rating: 5, date: spreadDate(71), comment: 'Delivered on time and exactly as described. Will order again.' },
+    { id: 'r2', author: 'Ngozi A.', rating: 4, date: spreadDate(72), comment: 'Good quality, though packaging could be sturdier.' },
+    { id: 'r3', author: 'Yakubu D.', rating: 5, date: spreadDate(73), comment: 'Supplier answered all my questions before I paid. Trustworthy.' },
+  ].sort((a, b) => b.date.localeCompare(a.date)),
 };
 
 export const buildProductDetail = (product: Product): ProductDetail => ({
@@ -218,7 +266,7 @@ export const advisories: Advisory[] = [
   { id: 'a5', cropType: 'maize', title: 'Fall armyworm pressure rising', window: 'Whorl stage', detail: 'Regional traps show increased moth counts. Scout early mornings and treat only if damage exceeds 20% of plants.', severity: 'warning' },
 ];
 
-export const cooperatives: Cooperative[] = [
+const cooperativeSeeds: Cooperative[] = [
   {
     id: 'g1', name: 'Oyo Cassava Growers Cooperative', cropFocus: 'cassava', region: 'oyo', memberCount: 42,
     description: 'Aggregates fresh tubers and dried chips for collective sale to processors.',
@@ -294,16 +342,25 @@ export const cooperatives: Cooperative[] = [
   },
 ];
 
+/** Cooperatives with message threads spread across the platform's history. */
+export const cooperatives: Cooperative[] = cooperativeSeeds.map((coop, c) => ({
+  ...coop,
+  messages: coop.messages.map((message, m) => ({
+    ...message,
+    timestamp: threadTimestamp(c, m, coop.messages.length),
+  })),
+}));
+
 export const users: User[] = [
-  { id: 'u1', name: 'Adewale Ogun', role: 'farmer', phone: '+234 803 445 1200', region: 'oyo', avatarInitials: 'AO', status: 'active', lastActive: '2026-07-11 08:30' },
-  { id: 'u2', name: 'Ibrahim Sani', role: 'farmer', phone: '+234 802 118 9900', region: 'kaduna', avatarInitials: 'IS', status: 'active', lastActive: '2026-07-11 07:55' },
-  { id: 'u3', name: 'GreenField Agro Inputs', role: 'supplier', phone: '+234 803 111 2200', region: 'oyo', avatarInitials: 'GA', status: 'active', lastActive: '2026-07-10 18:12' },
-  { id: 'u4', name: 'Savannah Seeds Ltd', role: 'supplier', phone: '+234 806 244 8890', region: 'kaduna', avatarInitials: 'SS', status: 'inactive', lastActive: '2026-06-29 13:40' },
-  { id: 'u5', name: 'Effiong Bassey', role: 'farmer', phone: '+234 803 556 7788', region: 'cross-river', avatarInitials: 'EB', status: 'active', lastActive: '2026-07-11 06:20' },
-  { id: 'u6', name: 'Delta Palm Resources', role: 'supplier', phone: '+234 802 998 4410', region: 'cross-river', avatarInitials: 'DP', status: 'active', lastActive: '2026-07-10 20:05' },
-  { id: 'u7', name: 'Terhemba Iorpev', role: 'farmer', phone: '+234 813 220 1145', region: 'benue', avatarInitials: 'TI', status: 'inactive', lastActive: '2026-07-02 09:15' },
-  { id: 'u8', name: 'Platform Admin', role: 'admin', phone: '+234 700 000 0000', region: 'oyo', avatarInitials: 'PA', status: 'active', lastActive: '2026-07-11 08:45' },
-  { id: 'u9', name: 'Chinelo Eze', role: 'admin', phone: '+234 809 500 7788', region: 'enugu', avatarInitials: 'CE', status: 'active', lastActive: '2026-07-11 09:10' },
+  { id: 'u1', name: 'Adewale Ogun', role: 'farmer', phone: '+234 803 445 1200', region: 'oyo', avatarInitials: 'AO', status: 'active', lastActive: spreadDateTime(31) },
+  { id: 'u2', name: 'Ibrahim Sani', role: 'farmer', phone: '+234 802 118 9900', region: 'kaduna', avatarInitials: 'IS', status: 'active', lastActive: spreadDateTime(32) },
+  { id: 'u3', name: 'GreenField Agro Inputs', role: 'supplier', phone: '+234 803 111 2200', region: 'oyo', avatarInitials: 'GA', status: 'active', lastActive: spreadDateTime(33) },
+  { id: 'u4', name: 'Savannah Seeds Ltd', role: 'supplier', phone: '+234 806 244 8890', region: 'kaduna', avatarInitials: 'SS', status: 'inactive', lastActive: spreadDateTime(34) },
+  { id: 'u5', name: 'Effiong Bassey', role: 'farmer', phone: '+234 803 556 7788', region: 'cross-river', avatarInitials: 'EB', status: 'active', lastActive: spreadDateTime(35) },
+  { id: 'u6', name: 'Delta Palm Resources', role: 'supplier', phone: '+234 802 998 4410', region: 'cross-river', avatarInitials: 'DP', status: 'active', lastActive: spreadDateTime(36) },
+  { id: 'u7', name: 'Terhemba Iorpev', role: 'farmer', phone: '+234 813 220 1145', region: 'benue', avatarInitials: 'TI', status: 'inactive', lastActive: spreadDateTime(37) },
+  { id: 'u8', name: 'Platform Admin', role: 'admin', phone: '+234 700 000 0000', region: 'oyo', avatarInitials: 'PA', status: 'active', lastActive: spreadDateTime(38) },
+  { id: 'u9', name: 'Chinelo Eze', role: 'admin', phone: '+234 809 500 7788', region: 'enugu', avatarInitials: 'CE', status: 'active', lastActive: spreadDateTime(39) },
 ];
 
 /**
@@ -313,11 +370,11 @@ export const users: User[] = [
  * and message text are user-generated, so they stay in their source language.
  */
 export const supplierInquiries: SupplierInquiry[] = [
-  { id: 'q1', buyerName: 'Musa Ibrahim', productId: 'p1', productName: 'Improved Cassava Stem Cuttings (TME 419)', message: 'Do you have 20 bundles available for next week?', date: '2026-07-11 09:20', phone: '+234 803 220 1180' },
-  { id: 'q2', buyerName: 'Grace Okon', productId: 'p17', productName: 'Dried Cassava Chips (Bulk)', message: 'What is the price for 2 tonnes delivered to Ibadan?', date: '2026-07-10 16:05', phone: '+234 806 771 4410' },
-  { id: 'q3', buyerName: 'Yakubu Danladi', productId: 'p7', productName: 'Organic Poultry Manure Pellets', message: 'Is a bulk discount available for 30 bags?', date: '2026-07-10 11:40', phone: '+234 813 900 2255' },
-  { id: 'q4', buyerName: 'Ngozi Umeh', productId: 'p14', productName: 'Mancozeb Fungicide (1kg)', message: 'Can I pick up today? Which market are you at?', date: '2026-07-09 14:15', phone: '+234 705 118 9080' },
-];
+  { id: 'q1', buyerName: 'Musa Ibrahim', productId: 'p1', productName: 'Improved Cassava Stem Cuttings (TME 419)', message: 'Do you have 20 bundles available for next week?', date: spreadDateTime(51), phone: '+234 803 220 1180' },
+  { id: 'q2', buyerName: 'Grace Okon', productId: 'p17', productName: 'Dried Cassava Chips (Bulk)', message: 'What is the price for 2 tonnes delivered to Ibadan?', date: spreadDateTime(52), phone: '+234 806 771 4410' },
+  { id: 'q3', buyerName: 'Yakubu Danladi', productId: 'p7', productName: 'Organic Poultry Manure Pellets', message: 'Is a bulk discount available for 30 bags?', date: spreadDateTime(53), phone: '+234 813 900 2255' },
+  { id: 'q4', buyerName: 'Ngozi Umeh', productId: 'p14', productName: 'Mancozeb Fungicide (1kg)', message: 'Can I pick up today? Which market are you at?', date: spreadDateTime(54), phone: '+234 705 118 9080' },
+].sort((a, b) => b.date.localeCompare(a.date));
 
 /**
  * Demo credentials for the mock auth layer. Any listed phone + the shared PIN
