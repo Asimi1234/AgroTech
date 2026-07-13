@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -23,39 +23,52 @@ const DashboardRoute = () => {
   return role === 'supplier' ? <SupplierDashboard /> : <FarmerDashboard />;
 };
 
-export const App = () => (
-  <ErrorBoundary>
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+export const App = () => {
+  const bootstrap = useAuthStore((s) => s.bootstrap);
+  const hydrated = useAuthStore((s) => s.hydrated);
 
-        <Route
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/dashboard" element={<DashboardRoute />} />
-          <Route path="/marketplace" element={<MarketplacePage />} />
-          <Route path="/product/:id" element={<ProductDetailPage />} />
-          <Route path="/groups" element={<GroupsPage />} />
+  useEffect(() => {
+    void bootstrap();
+  }, [bootstrap]);
+
+  // Wait for the initial session check so protected routes don't flash to
+  // /login before a real session is restored (server-auth mode only).
+  if (!hydrated) return <PageLoader />;
+
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+
           <Route
-            path="/admin"
             element={
-              <ProtectedRoute roles={['admin']}>
-                <AdminDashboard />
+              <ProtectedRoute>
+                <AppLayout />
               </ProtectedRoute>
             }
-          />
-        </Route>
+          >
+            <Route path="/dashboard" element={<DashboardRoute />} />
+            <Route path="/marketplace" element={<MarketplacePage />} />
+            <Route path="/product/:id" element={<ProductDetailPage />} />
+            <Route path="/groups" element={<GroupsPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
-  </ErrorBoundary>
-);
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

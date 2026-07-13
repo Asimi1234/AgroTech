@@ -115,6 +115,10 @@ export interface ApiError {
 export interface AgroApi {
   login(payload: LoginPayload): Promise<AuthenticatedUser>;
   register(payload: RegisterPayload): Promise<AuthenticatedUser>;
+  /** End the session (server-side where applicable). */
+  logout(): Promise<void>;
+  /** Restore a persisted server session on app load, or `null` if none. */
+  restoreSession(): Promise<AuthenticatedUser | null>;
   getCommodityPrices(): Promise<CommodityPrice[]>;
   getWeather(region: RegionId): Promise<WeatherForecast>;
   getAdvisories(): Promise<Advisory[]>;
@@ -291,6 +295,12 @@ class MockApi implements AgroApi {
       region: account.region,
       avatarInitials: account.avatarInitials,
     };
+  }
+
+  // Mock/HTTP sessions live in the persisted client store — no server session.
+  async logout(): Promise<void> {}
+  async restoreSession(): Promise<AuthenticatedUser | null> {
+    return null;
   }
 
   getCommodityPrices(): Promise<CommodityPrice[]> {
@@ -501,6 +511,11 @@ class HttpApi implements AgroApi {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  }
+
+  async logout(): Promise<void> {}
+  async restoreSession(): Promise<AuthenticatedUser | null> {
+    return null;
   }
 
   getCommodityPrices(): Promise<CommodityPrice[]> {
@@ -743,6 +758,13 @@ const initials = (name: string): string =>
 
 /** Last 10 digits — tolerant of `+234`, spaces, and leading-zero variants. */
 const phoneKey = (phone: string): string => normalizePhone(phone).slice(-10);
+
+// Supabase Auth is email/password; the app's UX is phone + 4-digit PIN. Map a
+// phone to a deterministic synthetic email and derive a >=6-char password from
+// the PIN. Demo-grade: real phone auth would use an SMS OTP provider.
+const phoneToEmail = (phone: string): string =>
+  `${normalizePhone(phone)}@ojafarm.local`;
+const pinToPassword = (pin: string): string => `ojafarm-${pin}`;
 
 const guessCategory = (name: string, description: string): ProductCategory => {
   const s = `${name} ${description}`.toLowerCase();
@@ -1002,48 +1024,7 @@ class SupabaseApi implements AgroApi {
     };
   }
 
-  async login(payload: LoginPayload): Promise<AuthenticatedUser> {
-    debug('login', payload.role);
-    const key = phoneKey(payload.phone);
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('role', payload.role);
-    if (error) fail(error, 502);
-
-    const match = ((data ?? []) as UserRow[]).find(
-      (u) => u.phone && phoneKey(u.phone) === key,
-    );
-    if (match) {
-      // A user with no `pin` column (un-migrated DB) is accepted on phone+role.
-      if (match.pin == null || match.pin === payload.pin) return this.toAuth(match);
-      const apiError: ApiError = {
-        status: 401,
-        message:
-          'Invalid phone, PIN, or role. Check your details or create an account.',
-      };
-      throw apiError;
-    }
-
-    // Fall back to the seeded demo credentials for offline/demo sign-in.
-    const demo = demoCredentials.find(
-      (c) =>
-        phoneKey(c.phone) === key &&
-        c.pin === payload.pin &&
-        c.role === payload.role,
-    );
-    if (demo) {
-      const profile = users.find((u) => u.role === payload.role);
-      return {
-        id: profile?.id ?? 'u0',
-        name: demo.name,
-        role: payload.role,
-        phone: payload.phone,
-        region: profile?.region ?? 'oyo',
-        avatarInitials: profile?.avatarInitials ?? 'OF',
-      };
-    }
-
+  private unauthorized(): never {
     const apiError: ApiError = {
       status: 401,
       message:
@@ -1052,40 +1033,150 @@ class SupabaseApi implements AgroApi {
     throw apiError;
   }
 
+  /** Fetch the profile row for an authenticated user id. */
+  private async profileFor(id: string): Promise<UserRow | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) fail(error);
+    return (data as UserRow | null) ?? null;
+  }
+
+  /**
+   * Seeded demo credentials have no Auth account on first use. Provision one
+   * (idempotently) via signUp and create its profile row, so the demo login
+   * establishes a real session and RLS applies uniformly.
+   */
+  private async ensureDemoAccount(
+    demo: (typeof demoCredentials)[number],
+    email: string,
+    password: string,
+  ): Promise<void> {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name: demo.name, role: demo.role } },
+    });
+    if (error) {
+      debug('ensureDemoAccount signUp', error.message);
+      return;
+    }
+    const uid = data.user?.id;
+    if (uid) {
+      await supabase.from('users').upsert(
+        {
+          id: uid,
+          name: demo.name,
+          role: demo.role,
+          phone: demo.phone,
+          location: 'Oyo',
+          status: 'active',
+          email,
+        },
+        { onConflict: 'id' },
+      );
+    }
+  }
+
+  async login(payload: LoginPayload): Promise<AuthenticatedUser> {
+    debug('login', payload.role);
+    const email = phoneToEmail(payload.phone);
+    const password = pinToPassword(payload.pin);
+
+    let result = await supabase.auth.signInWithPassword({ email, password });
+
+    // First-time demo login: provision the Auth account, then retry.
+    if (result.error) {
+      const demo = demoCredentials.find(
+        (c) =>
+          phoneKey(c.phone) === phoneKey(payload.phone) &&
+          c.pin === payload.pin &&
+          c.role === payload.role,
+      );
+      if (demo) {
+        await this.ensureDemoAccount(demo, email, password);
+        result = await supabase.auth.signInWithPassword({ email, password });
+      }
+    }
+
+    const authUser = result.data?.user;
+    if (result.error || !authUser) this.unauthorized();
+
+    const profile = await this.profileFor(authUser!.id);
+    if (!profile || profile.role !== payload.role) {
+      await supabase.auth.signOut();
+      this.unauthorized();
+    }
+    return this.toAuth(profile!);
+  }
+
   async register(payload: RegisterPayload): Promise<AuthenticatedUser> {
     debug('register', payload.role);
-    const key = phoneKey(payload.phone);
-    const { data: existing, error: lookupError } = await supabase
-      .from('users')
-      .select('id, phone');
-    if (lookupError) fail(lookupError, 502);
+    const email = phoneToEmail(payload.phone);
+    const password = pinToPassword(payload.pin);
 
-    const taken = ((existing ?? []) as { phone: string | null }[]).some(
-      (u) => u.phone && phoneKey(u.phone) === key,
-    );
-    if (taken) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name: payload.name, role: payload.role, region: payload.region },
+      },
+    });
+    if (error) {
+      const conflict = /already registered|already exists|User already/i.test(
+        error.message,
+      );
       const apiError: ApiError = {
-        status: 409,
-        message: 'An account with this phone number already exists.',
+        status: conflict ? 409 : 400,
+        message: conflict
+          ? 'An account with this phone number already exists.'
+          : error.message,
       };
       throw apiError;
     }
 
-    const { data, error } = await supabase
+    const uid = data.user?.id;
+    if (!uid || !data.session) {
+      // No session means Supabase requires email confirmation — incompatible
+      // with synthetic phone emails. Disable "Confirm email" in Auth settings.
+      const apiError: ApiError = {
+        status: 500,
+        message:
+          'Sign-up succeeded but no session was returned. Disable email confirmation in Supabase Auth settings.',
+      };
+      throw apiError;
+    }
+
+    const { data: profile, error: profileError } = await supabase
       .from('users')
       .insert({
+        id: uid,
         name: payload.name,
         role: payload.role,
         location: regionToLocation(payload.region),
         phone: payload.phone,
-        pin: payload.pin,
         status: 'active',
-        email: `${normalizePhone(payload.phone)}@ojafarm.local`,
+        email,
       })
       .select()
       .single();
-    if (error) fail(error);
-    return this.toAuth(data as UserRow);
+    if (profileError) fail(profileError);
+    return this.toAuth(profile as UserRow);
+  }
+
+  async logout(): Promise<void> {
+    debug('logout');
+    await supabase.auth.signOut();
+  }
+
+  async restoreSession(): Promise<AuthenticatedUser | null> {
+    const { data } = await supabase.auth.getSession();
+    const authUser = data.session?.user;
+    if (!authUser) return null;
+    const profile = await this.profileFor(authUser.id);
+    return profile ? this.toAuth(profile) : null;
   }
 
   async getCommodityPrices(): Promise<CommodityPrice[]> {
@@ -1538,6 +1629,13 @@ const selectBackend = (): AgroApi => {
 };
 
 export const api: AgroApi = selectBackend();
+
+/**
+ * True when the active backend enforces sessions server-side (Supabase Auth).
+ * The auth store uses this to decide whether to restore a real session on load
+ * versus trusting the persisted client state (mock/HTTP).
+ */
+export const usesServerAuth = !env.useMockApi && supabaseConfigured;
 
 export const isApiError = (value: unknown): value is ApiError =>
   typeof value === 'object' &&
