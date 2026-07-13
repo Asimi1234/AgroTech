@@ -63,6 +63,8 @@ const ha: CatalogText = {
   units: {
     'per kg': 'kowane kg',
     'per litre': 'kowace lita',
+    'per bag': 'kowace buhu',
+    'per unit': 'kowanne guda',
     bundle: 'damara',
     '2kg pack': 'fakitin 2kg',
     seedling: 'tsiro',
@@ -174,6 +176,8 @@ const yo: CatalogText = {
   units: {
     'per kg': 'fún kg',
     'per litre': 'fún lítà',
+    'per bag': 'fún àpò',
+    'per unit': 'fún ẹyọ',
     bundle: 'ìdì',
     '2kg pack': 'àpò 2kg',
     seedling: 'àgbìn',
@@ -278,6 +282,8 @@ const ig: CatalogText = {
   units: {
     'per kg': 'kwa kg',
     'per litre': 'kwa lita',
+    'per bag': 'kwa akpa',
+    'per unit': 'kwa otu',
     bundle: 'ùkwù',
     '2kg pack': 'ngwugwu 2kg',
     seedling: 'mkpụrụ',
@@ -375,6 +381,17 @@ const withLang = <T>(pick: (c: CatalogText) => T | undefined): T | undefined => 
   return lang ? pick(catalog[lang]) : undefined;
 };
 
+/**
+ * Read a field from a row's own backend-served translations (Phase 2). Takes
+ * precedence over the static dictionaries below, which remain as the mock-mode
+ * fallback keyed by seed ids.
+ */
+type RowI18n = Partial<Record<Lang, Partial<Record<string, string>>>> | undefined;
+const fromRow = (i18n: RowI18n, field: string): string | undefined => {
+  const lang = activeLang();
+  return lang ? i18n?.[lang]?.[field] : undefined;
+};
+
 // --- Low-level lookups used by the mockData label helpers -------------------
 
 export const catalogCrop = (id: string): string | undefined =>
@@ -400,31 +417,62 @@ export const memberRole = (en: string): string =>
 export const supplierName = (id: string, en: string): string =>
   withLang((c) => c.suppliers[id]) ?? en;
 
-export const productName = (p: { id: string; name: string }): string =>
-  withLang((c) => c.products[p.id]?.name) ?? p.name;
+export const productName = (p: {
+  id: string;
+  name: string;
+  i18n?: RowI18n;
+}): string =>
+  fromRow(p.i18n, 'name') ?? withLang((c) => c.products[p.id]?.name) ?? p.name;
 
 export const productDescription = (p: {
   id: string;
   description: string;
-}): string => withLang((c) => c.products[p.id]?.description) ?? p.description;
+  i18n?: RowI18n;
+}): string =>
+  fromRow(p.i18n, 'description') ??
+  withLang((c) => c.products[p.id]?.description) ??
+  p.description;
 
-export const advisoryTitle = (a: { id: string; title: string }): string =>
-  withLang((c) => c.advisories[a.id]?.title) ?? a.title;
+export const advisoryTitle = (a: {
+  id: string;
+  title: string;
+  i18n?: RowI18n;
+}): string =>
+  fromRow(a.i18n, 'title') ?? withLang((c) => c.advisories[a.id]?.title) ?? a.title;
 
-export const advisoryWindow = (a: { id: string; window: string }): string =>
-  withLang((c) => c.advisories[a.id]?.window) ?? a.window;
+export const advisoryWindow = (a: {
+  id: string;
+  window: string;
+  i18n?: RowI18n;
+}): string =>
+  fromRow(a.i18n, 'window') ??
+  withLang((c) => c.advisories[a.id]?.window) ??
+  a.window;
 
-export const advisoryDetail = (a: { id: string; detail: string }): string =>
-  withLang((c) => c.advisories[a.id]?.detail) ?? a.detail;
+export const advisoryDetail = (a: {
+  id: string;
+  detail: string;
+  i18n?: RowI18n;
+}): string =>
+  fromRow(a.i18n, 'detail') ??
+  withLang((c) => c.advisories[a.id]?.detail) ??
+  a.detail;
 
-export const cooperativeName = (g: { id: string; name: string }): string =>
-  withLang((c) => c.cooperatives[g.id]?.name) ?? g.name;
+export const cooperativeName = (g: {
+  id: string;
+  name: string;
+  i18n?: RowI18n;
+}): string =>
+  fromRow(g.i18n, 'name') ?? withLang((c) => c.cooperatives[g.id]?.name) ?? g.name;
 
 export const cooperativeDescription = (g: {
   id: string;
   description: string;
+  i18n?: RowI18n;
 }): string =>
-  withLang((c) => c.cooperatives[g.id]?.description) ?? g.description;
+  fromRow(g.i18n, 'description') ??
+  withLang((c) => c.cooperatives[g.id]?.description) ??
+  g.description;
 
 export const reviewComment = (r: { id: string; comment: string }): string =>
   withLang((c) => c.reviews[r.id]) ?? r.comment;

@@ -652,6 +652,7 @@ interface ProductRow {
   category?: string | null;
   unit?: string | null;
   in_stock?: boolean | null;
+  translations?: Product['i18n'] | null;
   created_at: string;
 }
 interface PriceRow {
@@ -676,6 +677,7 @@ interface AdvisoryRow {
   content: string | null;
   severity?: string | null;
   window?: string | null;
+  translations?: Advisory['i18n'] | null;
 }
 interface GroupRow {
   id: string;
@@ -683,6 +685,7 @@ interface GroupRow {
   crop_focus: string;
   location: string | null;
   description?: string | null;
+  translations?: Cooperative['i18n'] | null;
 }
 interface SupplierInquiryRow {
   id: string;
@@ -884,6 +887,7 @@ const mapProduct = (row: ProductRow, supplier?: UserRow): Product => {
     supplierPhone: supplier?.phone ?? '',
     listedAt: row.created_at ?? '',
     inStock: row.in_stock ?? true,
+    i18n: row.translations ?? undefined,
   };
 };
 
@@ -896,6 +900,7 @@ const mapAdvisory = (row: AdvisoryRow): Advisory => ({
   severity:
     (row.severity as Advisory['severity'] | null) ??
     inferSeverity(row.title, row.content),
+  i18n: row.translations ?? undefined,
 });
 
 const mapCooperative = (
@@ -910,6 +915,7 @@ const mapCooperative = (
   description: row.description ?? '',
   members,
   messages: [],
+  i18n: row.translations ?? undefined,
 });
 
 const mapInquiry = (row: SupplierInquiryRow): SupplierInquiry => ({

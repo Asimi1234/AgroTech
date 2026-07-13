@@ -57,6 +57,18 @@ export interface Review {
   comment: string;
 }
 
+/** Languages with localized dynamic content (UI chrome uses react-i18next). */
+export type ContentLang = 'ha' | 'yo' | 'ig';
+
+/**
+ * Per-language overrides for a row's free-text fields, served by the backend
+ * (Phase 2). Resolved against the active language at render time with an
+ * English fallback; absent for user-generated content that has no translation.
+ */
+export type ContentI18n<K extends string> = Partial<
+  Record<ContentLang, Partial<Record<K, string>>>
+>;
+
 export interface Product {
   id: string;
   name: string;
@@ -73,6 +85,7 @@ export interface Product {
   supplierPhone: string;
   listedAt: string;
   inStock: boolean;
+  i18n?: ContentI18n<'name' | 'description'>;
 }
 
 export interface PricePoint {
@@ -120,6 +133,7 @@ export interface Advisory {
   window: string;
   detail: string;
   severity: 'info' | 'action' | 'warning';
+  i18n?: ContentI18n<'title' | 'window' | 'detail'>;
 }
 
 /** Editable fields of an advisory (everything the admin controls, minus the id). */
@@ -177,6 +191,7 @@ export interface Cooperative {
   description: string;
   members: GroupMember[];
   messages: GroupMessage[];
+  i18n?: ContentI18n<'name' | 'description'>;
 }
 
 export interface Credentials {
