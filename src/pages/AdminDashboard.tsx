@@ -7,14 +7,29 @@ import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Icon } from '@/components/ui/Icon';
+import { Select } from '@/components/ui/Select';
 import { AdvisoriesManager } from '@/components/admin/AdvisoriesManager';
 import { AnalyticsPanel } from '@/components/admin/AnalyticsPanel';
 import { useAsync } from '@/hooks/useAsync';
 import { api, isApiError } from '@/services/api';
 import { formatNaira } from '@/lib/cn';
-import { regionLabel } from '@/data/mockData';
+import { regionLabel } from '@/data/reference';
 import { commodityLabel, unitLabel } from '@/i18n/catalog';
-import type { CommodityPrice, User } from '@/types';
+import type {
+  CommodityPrice,
+  RegionId,
+  User,
+  WeatherForecast,
+  WeatherInput,
+} from '@/types';
+
+const WEATHER_CONDITIONS: WeatherInput['condition'][] = [
+  'sunny',
+  'partly-cloudy',
+  'cloudy',
+  'rain',
+  'storm',
+];
 
 const PriceEditor = () => {
   const { t } = useTranslation('admin');
@@ -267,6 +282,46 @@ const WeatherTable = () => {
     () => Promise.all(WEATHER_REGIONS.map((region) => api.getWeather(region))),
     [],
   );
+  const [editing, setEditing] = useState<RegionId | null>(null);
+  const [form, setForm] = useState<WeatherInput | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const openEdit = (w: WeatherForecast) => {
+    setEditing(w.region);
+    setForm({
+      temperature: w.currentTempC,
+      humidity: w.humidityPercent,
+      rainfall: w.daily[0]?.rainfallMm ?? 0,
+      condition: w.condition,
+      forecast: '',
+    });
+    setNotice(null);
+    setFormError(null);
+  };
+
+  const save = async () => {
+    if (!editing || !form) return;
+    setSaving(true);
+    setFormError(null);
+    try {
+      await api.updateWeather(editing, form);
+      setEditing(null);
+      setForm(null);
+      setNotice(t('weather.saved'));
+      reload();
+    } catch (e) {
+      setFormError(isApiError(e) ? e.message : t('weather.saveError'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const conditionOptions = WEATHER_CONDITIONS.map((c) => ({
+    value: c,
+    label: t(`weather.cond.${c}`),
+  }));
 
   return (
     <Card>
@@ -277,33 +332,151 @@ const WeatherTable = () => {
         {loading && <Skeleton className="h-40 w-full" />}
         {error && !loading && <ErrorState message={error} onRetry={reload} />}
         {!loading && !error && data && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-earth-200 text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2 pr-3 font-semibold">{t('weather.colRegion')}</th>
-                  <th className="py-2 pr-3 font-semibold">{t('weather.colTemp')}</th>
-                  <th className="py-2 pr-3 font-semibold">{t('weather.colHumidity')}</th>
-                  <th className="py-2 font-semibold">{t('weather.colUpdated')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((w) => (
-                  <tr
-                    key={w.region}
-                    className="border-b border-earth-100 last:border-0"
+          <>
+            {notice && (
+              <p
+                role="status"
+                className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800"
+              >
+                {notice}
+              </p>
+            )}
+            {formError && (
+              <p
+                role="alert"
+                className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
+              >
+                {formError}
+              </p>
+            )}
+
+            {editing && form && (
+              <div className="mb-4 rounded-lg border-2 border-dashed border-earth-200 p-3">
+                <p className="mb-2 text-sm font-semibold text-slate-800">
+                  {t('weather.editTitle', { region: regionLabel(editing) })}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="text-sm">
+                    <span className="mb-1 block font-medium text-slate-600">
+                      {t('weather.fieldTemp')}
+                    </span>
+                    <input
+                      type="number"
+                      value={form.temperature}
+                      onChange={(e) =>
+                        setForm({ ...form, temperature: Number(e.target.value) })
+                      }
+                      className="focus-ring w-full rounded-lg border-2 border-earth-200 px-2 py-1"
+                    />
+                  </label>
+                  <label className="text-sm">
+                    <span className="mb-1 block font-medium text-slate-600">
+                      {t('weather.fieldHumidity')}
+                    </span>
+                    <input
+                      type="number"
+                      value={form.humidity}
+                      onChange={(e) =>
+                        setForm({ ...form, humidity: Number(e.target.value) })
+                      }
+                      className="focus-ring w-full rounded-lg border-2 border-earth-200 px-2 py-1"
+                    />
+                  </label>
+                  <label className="text-sm">
+                    <span className="mb-1 block font-medium text-slate-600">
+                      {t('weather.fieldRainfall')}
+                    </span>
+                    <input
+                      type="number"
+                      value={form.rainfall}
+                      onChange={(e) =>
+                        setForm({ ...form, rainfall: Number(e.target.value) })
+                      }
+                      className="focus-ring w-full rounded-lg border-2 border-earth-200 px-2 py-1"
+                    />
+                  </label>
+                  <Select
+                    label={t('weather.fieldCondition')}
+                    options={conditionOptions}
+                    value={form.condition}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        condition: e.target.value as WeatherInput['condition'],
+                      })
+                    }
+                  />
+                  <label className="text-sm sm:col-span-2">
+                    <span className="mb-1 block font-medium text-slate-600">
+                      {t('weather.fieldForecast')}
+                    </span>
+                    <input
+                      value={form.forecast}
+                      placeholder={t('weather.fieldForecastPlaceholder')}
+                      onChange={(e) => setForm({ ...form, forecast: e.target.value })}
+                      className="focus-ring w-full rounded-lg border-2 border-earth-200 px-2 py-1"
+                    />
+                  </label>
+                </div>
+                <div className="mt-3 flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={saving}
+                    onClick={() => {
+                      setEditing(null);
+                      setForm(null);
+                      setFormError(null);
+                    }}
                   >
-                    <td className="py-3 pr-3 font-semibold text-slate-900">
-                      {regionLabel(w.region)}
-                    </td>
-                    <td className="py-3 pr-3">{w.currentTempC}°C</td>
-                    <td className="py-3 pr-3">{w.humidityPercent}%</td>
-                    <td className="py-3 text-slate-500">{w.updatedAt}</td>
+                    {t('weather.cancel')}
+                  </Button>
+                  <Button size="sm" disabled={saving} onClick={save}>
+                    {t('weather.save')}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-earth-200 text-xs uppercase tracking-wide text-slate-500">
+                    <th className="py-2 pr-3 font-semibold">{t('weather.colRegion')}</th>
+                    <th className="py-2 pr-3 font-semibold">{t('weather.colTemp')}</th>
+                    <th className="py-2 pr-3 font-semibold">{t('weather.colHumidity')}</th>
+                    <th className="py-2 pr-3 font-semibold">{t('weather.colUpdated')}</th>
+                    <th className="py-2 font-semibold">{t('weather.colActions')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.map((w) => (
+                    <tr
+                      key={w.region}
+                      className="border-b border-earth-100 last:border-0"
+                    >
+                      <td className="py-3 pr-3 font-semibold text-slate-900">
+                        {regionLabel(w.region)}
+                      </td>
+                      <td className="py-3 pr-3">{w.currentTempC}°C</td>
+                      <td className="py-3 pr-3">{w.humidityPercent}%</td>
+                      <td className="py-3 pr-3 text-slate-500">{w.updatedAt}</td>
+                      <td className="py-3">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(w)}
+                          aria-label={t('weather.edit')}
+                          className="focus-ring rounded-lg p-2 text-slate-500 hover:bg-earth-50 hover:text-slate-800"
+                        >
+                          <Icon name="edit" className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </CardBody>
     </Card>

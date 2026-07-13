@@ -186,6 +186,15 @@ export interface WeatherForecast {
   daily: DailyForecast[];
 }
 
+/** Admin input to set a region's current weather conditions (today's reading). */
+export interface WeatherInput {
+  temperature: number;
+  humidity: number;
+  rainfall: number;
+  condition: DailyForecast['condition'];
+  forecast: string;
+}
+
 export interface Advisory {
   id: string;
   cropType: CropType;

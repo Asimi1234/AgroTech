@@ -27,7 +27,27 @@
     "colRegion": "Region",
     "colTemp": "Temp",
     "colHumidity": "Humidity",
-    "colUpdated": "Updated"
+    "colUpdated": "Updated",
+    "colActions": "Action",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Weather updated.",
+    "saveError": "Couldn't save. Please try again.",
+    "editTitle": "Edit weather — {{region}}",
+    "fieldTemp": "Temperature (°C)",
+    "fieldHumidity": "Humidity (%)",
+    "fieldRainfall": "Rainfall (mm)",
+    "fieldCondition": "Condition",
+    "fieldForecast": "Summary",
+    "fieldForecastPlaceholder": "e.g. Sunny with afternoon showers",
+    "cond": {
+      "sunny": "Sunny",
+      "partly-cloudy": "Partly cloudy",
+      "cloudy": "Cloudy",
+      "rain": "Rain",
+      "storm": "Storm"
+    }
   },
   "users": {
     "title": "Users",

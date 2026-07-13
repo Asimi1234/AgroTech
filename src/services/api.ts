@@ -40,6 +40,7 @@ import type {
   User,
   UserRole,
   WeatherForecast,
+  WeatherInput,
 } from '@/types';
 
 // Re-export the core domain types so consumers can import them from the API
@@ -136,6 +137,8 @@ export interface AgroApi {
   /** Set a commodity's current price (admin only). */
   updateCommodityPrice(cropType: CropType, price: number): Promise<CommodityPrice>;
   getWeather(region: RegionId): Promise<WeatherForecast>;
+  /** Set a region's current weather (admin only). */
+  updateWeather(region: RegionId, input: WeatherInput): Promise<WeatherForecast>;
   getAdvisories(): Promise<Advisory[]>;
   createAdvisory(input: AdvisoryInput): Promise<Advisory>;
   updateAdvisory(id: string, input: AdvisoryInput): Promise<Advisory>;
@@ -244,6 +247,9 @@ class MockApi implements AgroApi {
   /** Mutable product list so supplier listing edits persist within a session. */
   private productList: Product[] = clone(products);
   private productSeq = products.length;
+
+  /** Mutable weather so admin edits persist within a session. */
+  private weather: WeatherForecast[] = clone(weatherForecasts);
 
   /**
    * The last authenticated user — the mock has no server session, so writes that
@@ -383,8 +389,29 @@ class MockApi implements AgroApi {
 
   async getWeather(region: RegionId): Promise<WeatherForecast> {
     const match =
-      weatherForecasts.find((w) => w.region === region) ?? weatherForecasts[0];
+      this.weather.find((w) => w.region === region) ?? this.weather[0];
     return this.respond(match);
+  }
+
+  async updateWeather(
+    region: RegionId,
+    input: WeatherInput,
+  ): Promise<WeatherForecast> {
+    const existing =
+      this.weather.find((w) => w.region === region) ?? this.weather[0];
+    const updated: WeatherForecast = {
+      ...existing,
+      region,
+      regionLabel: regionLabelEn(region),
+      currentTempC: input.temperature,
+      humidityPercent: input.humidity,
+      condition: input.condition,
+      updatedAt: today(),
+    };
+    this.weather = this.weather.some((w) => w.region === region)
+      ? this.weather.map((w) => (w.region === region ? updated : w))
+      : [...this.weather, updated];
+    return this.respond(updated);
   }
 
   getAdvisories(): Promise<Advisory[]> {
@@ -665,6 +692,13 @@ class HttpApi implements AgroApi {
 
   getWeather(region: RegionId): Promise<WeatherForecast> {
     return this.request(`/weather/${region}`);
+  }
+
+  updateWeather(region: RegionId, input: WeatherInput): Promise<WeatherForecast> {
+    return this.request(`/weather/${region}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
   }
 
   getAdvisories(): Promise<Advisory[]> {
@@ -1588,6 +1622,29 @@ class SupabaseApi implements AgroApi {
       : emptyForecast(region);
     writeCache(key, result);
     return result;
+  }
+
+  async updateWeather(
+    region: RegionId,
+    input: WeatherInput,
+  ): Promise<WeatherForecast> {
+    debug('updateWeather', region);
+    const location = regionToLocation(region);
+    const day = today();
+    // Replace today's reading for this region so repeated saves stay idempotent.
+    await supabase.from('weather').delete().eq('location', location).eq('date', day);
+    const { error } = await supabase.from('weather').insert({
+      location,
+      date: day,
+      temperature: input.temperature,
+      rainfall: input.rainfall,
+      forecast: input.forecast.trim() || input.condition,
+      condition: input.condition,
+      humidity: input.humidity,
+    });
+    if (error) fail(error);
+    clearCache(`${WEATHER_CACHE}.${region}`);
+    return this.getWeather(region);
   }
 
   async getAdvisories(): Promise<Advisory[]> {
