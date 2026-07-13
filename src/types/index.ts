@@ -11,7 +11,10 @@ export interface User {
   lastActive: string;
 }
 
-export type CropType = 'cassava' | 'maize' | 'oil-palm' | 'rice';
+// Commodities are admin-managed reference data (see the `commodities` table),
+// so this is an open set. The known values keep autocomplete; `(string & {})`
+// admits any slug a new commodity introduces without a code change.
+export type CropType = 'cassava' | 'maize' | 'oil-palm' | 'rice' | (string & {});
 
 export interface CropInfo {
   id: CropType;
@@ -138,6 +141,19 @@ export interface CommodityPrice {
   unit: string;
   changePercent: number;
   updatedAt: string;
+}
+
+/** A commodity in the reference table (list + display name + unit). */
+export interface Commodity {
+  cropType: CropType;
+  label: string;
+  unit: string;
+}
+
+/** Admin input to add a commodity. `slug` is derived from the label. */
+export interface CommodityInput {
+  label: string;
+  unit: string;
 }
 
 export interface DailyForecast {

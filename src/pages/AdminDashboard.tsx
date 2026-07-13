@@ -10,7 +10,7 @@ import { Icon } from '@/components/ui/Icon';
 import { AdvisoriesManager } from '@/components/admin/AdvisoriesManager';
 import { AnalyticsPanel } from '@/components/admin/AnalyticsPanel';
 import { useAsync } from '@/hooks/useAsync';
-import { api } from '@/services/api';
+import { api, isApiError } from '@/services/api';
 import { formatNaira } from '@/lib/cn';
 import { regionLabel } from '@/data/mockData';
 import { commodityLabel, unitLabel } from '@/i18n/catalog';
@@ -24,7 +24,14 @@ const PriceEditor = () => {
   );
   const [rows, setRows] = useState<CommodityPrice[]>([]);
   const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newUnit, setNewUnit] = useState('per kg');
+  const [newPrice, setNewPrice] = useState('');
 
   useEffect(() => {
     if (data) setRows(data);
@@ -34,7 +41,53 @@ const PriceEditor = () => {
     setRows((prev) =>
       prev.map((r) => (r.cropType === cropType ? { ...r, price } : r)),
     );
-    setSaved(false);
+    setNotice(null);
+  };
+
+  const runWrite = async (write: () => Promise<unknown>, ok: string) => {
+    setSaving(true);
+    setFormError(null);
+    try {
+      await write();
+      setNotice(ok);
+      reload();
+      return true;
+    } catch (e) {
+      setFormError(isApiError(e) ? e.message : t('prices.saveError'));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveEdits = async () => {
+    const changed = data
+      ? rows.filter((r) => {
+          const orig = data.find((d) => d.cropType === r.cropType);
+          return orig && orig.price !== r.price;
+        })
+      : [];
+    const ok = await runWrite(
+      () => Promise.all(changed.map((r) => api.updateCommodityPrice(r.cropType, r.price))),
+      t('prices.saved'),
+    );
+    if (ok) setEditing(false);
+  };
+
+  const addCommodity = async () => {
+    const price = Number(newPrice);
+    const ok = await runWrite(async () => {
+      const commodity = await api.createCommodity({ label: newName, unit: newUnit });
+      if (Number.isFinite(price) && price > 0) {
+        await api.updateCommodityPrice(commodity.cropType, price);
+      }
+    }, t('prices.added'));
+    if (ok) {
+      setAdding(false);
+      setNewName('');
+      setNewUnit('per kg');
+      setNewPrice('');
+    }
   };
 
   return (
@@ -47,27 +100,37 @@ const PriceEditor = () => {
               <Button
                 variant="ghost"
                 size="sm"
+                disabled={saving}
                 onClick={() => {
                   setEditing(false);
+                  setFormError(null);
                   if (data) setRows(data);
                 }}
               >
                 {t('prices.cancel')}
               </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setEditing(false);
-                  setSaved(true);
-                }}
-              >
+              <Button size="sm" disabled={saving} onClick={saveEdits}>
                 {t('prices.save')}
               </Button>
             </>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-              {t('prices.edit')}
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={saving}
+                onClick={() => {
+                  setAdding((v) => !v);
+                  setNotice(null);
+                  setFormError(null);
+                }}
+              >
+                {t('prices.add')}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                {t('prices.edit')}
+              </Button>
+            </>
           )}
         </div>
       </CardHeader>
@@ -76,13 +139,67 @@ const PriceEditor = () => {
         {error && !loading && <ErrorState message={error} onRetry={reload} />}
         {!loading && !error && (
           <>
-            {saved && (
+            {notice && (
               <p
                 role="status"
                 className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm font-medium text-green-800"
               >
-                {t('prices.saved')}
+                {notice}
               </p>
+            )}
+            {formError && (
+              <p
+                role="alert"
+                className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-800"
+              >
+                {formError}
+              </p>
+            )}
+            {adding && (
+              <div className="mb-4 grid gap-3 rounded-lg border-2 border-dashed border-earth-200 p-3 sm:grid-cols-4">
+                <label className="text-sm">
+                  <span className="mb-1 block font-medium text-slate-600">
+                    {t('prices.addName')}
+                  </span>
+                  <input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder={t('prices.addNamePlaceholder')}
+                    className="focus-ring w-full rounded-lg border-2 border-earth-200 px-2 py-1"
+                  />
+                </label>
+                <label className="text-sm">
+                  <span className="mb-1 block font-medium text-slate-600">
+                    {t('prices.addUnit')}
+                  </span>
+                  <input
+                    value={newUnit}
+                    onChange={(e) => setNewUnit(e.target.value)}
+                    placeholder={t('prices.addUnitPlaceholder')}
+                    className="focus-ring w-full rounded-lg border-2 border-earth-200 px-2 py-1"
+                  />
+                </label>
+                <label className="text-sm">
+                  <span className="mb-1 block font-medium text-slate-600">
+                    {t('prices.addPrice')}
+                  </span>
+                  <input
+                    type="number"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    className="focus-ring w-full rounded-lg border-2 border-earth-200 px-2 py-1"
+                  />
+                </label>
+                <div className="flex items-end">
+                  <Button
+                    size="sm"
+                    disabled={saving || !newName.trim() || !newUnit.trim()}
+                    onClick={addCommodity}
+                  >
+                    {t('prices.addSubmit')}
+                  </Button>
+                </div>
+              </div>
             )}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">

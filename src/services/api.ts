@@ -19,6 +19,8 @@ import { supabase, supabaseConfigured } from './supabase';
 import type {
   Advisory,
   AdvisoryInput,
+  Commodity,
+  CommodityInput,
   CommodityPrice,
   Cooperative,
   CropType,
@@ -40,6 +42,8 @@ import type {
 // surface directly (`import type { Product } from '@/services/api'`).
 export type {
   Advisory,
+  Commodity,
+  CommodityInput,
   CommodityPrice,
   Cooperative,
   Product,
@@ -120,6 +124,12 @@ export interface AgroApi {
   /** Restore a persisted server session on app load, or `null` if none. */
   restoreSession(): Promise<AuthenticatedUser | null>;
   getCommodityPrices(): Promise<CommodityPrice[]>;
+  /** The commodity reference list (admin-managed names + units). */
+  getCommodities(): Promise<Commodity[]>;
+  /** Add a commodity to the reference table (admin only). */
+  createCommodity(input: CommodityInput): Promise<Commodity>;
+  /** Set a commodity's current price (admin only). */
+  updateCommodityPrice(cropType: CropType, price: number): Promise<CommodityPrice>;
   getWeather(region: RegionId): Promise<WeatherForecast>;
   getAdvisories(): Promise<Advisory[]>;
   createAdvisory(input: AdvisoryInput): Promise<Advisory>;
@@ -214,6 +224,9 @@ class MockApi implements AgroApi {
   private coops: Cooperative[] = clone(cooperatives);
   private coopSeq = cooperatives.length;
 
+  /** Mutable commodity price list so admin edits/additions persist in-session. */
+  private prices: CommodityPrice[] = clone(commodityPrices);
+
   private async respond<T>(value: T, latencyOverride?: number): Promise<T> {
     await delay(latencyOverride ?? this.latency);
     return clone(value);
@@ -304,7 +317,41 @@ class MockApi implements AgroApi {
   }
 
   getCommodityPrices(): Promise<CommodityPrice[]> {
-    return this.respond(commodityPrices);
+    return this.respond(this.prices);
+  }
+
+  getCommodities(): Promise<Commodity[]> {
+    return this.respond(
+      this.prices.map((p) => ({ cropType: p.cropType, label: p.label, unit: p.unit })),
+    );
+  }
+
+  async createCommodity(input: CommodityInput): Promise<Commodity> {
+    const cropType = slugify(input.label);
+    if (!cropType) fail({ message: 'A commodity name is required.' }, 400);
+    if (this.prices.some((p) => p.cropType === cropType)) {
+      fail({ message: 'That commodity already exists.' }, 409);
+    }
+    this.prices = [
+      ...this.prices,
+      {
+        cropType,
+        label: input.label,
+        unit: input.unit,
+        price: 0,
+        changePercent: 0,
+        updatedAt: today(),
+      },
+    ];
+    return this.respond({ cropType, label: input.label, unit: input.unit });
+  }
+
+  async updateCommodityPrice(cropType: CropType, price: number): Promise<CommodityPrice> {
+    const existing = this.prices.find((p) => p.cropType === cropType);
+    if (!existing) notFound('Commodity not found.');
+    const updated: CommodityPrice = { ...existing!, price, updatedAt: today() };
+    this.prices = this.prices.map((p) => (p.cropType === cropType ? updated : p));
+    return this.respond(updated);
   }
 
   async getWeather(region: RegionId): Promise<WeatherForecast> {
@@ -522,6 +569,24 @@ class HttpApi implements AgroApi {
     return this.request('/prices');
   }
 
+  getCommodities(): Promise<Commodity[]> {
+    return this.request('/commodities');
+  }
+
+  createCommodity(input: CommodityInput): Promise<Commodity> {
+    return this.request('/commodities', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  updateCommodityPrice(cropType: CropType, price: number): Promise<CommodityPrice> {
+    return this.request(`/prices/${cropType}`, {
+      method: 'PUT',
+      body: JSON.stringify({ price }),
+    });
+  }
+
   getWeather(region: RegionId): Promise<WeatherForecast> {
     return this.request(`/weather/${region}`);
   }
@@ -661,6 +726,13 @@ interface PriceRow {
   price: number;
   date: string;
 }
+interface CommodityRow {
+  slug: string;
+  name: string;
+  unit: string;
+  sort?: number | null;
+  active?: boolean | null;
+}
 interface WeatherRow {
   location: string;
   temperature: number;
@@ -741,6 +813,12 @@ const toCropType = (dbCrop: string): CropType =>
 const toDbCrop = (crop: string): string =>
   CROP_APP_TO_DB[crop as CropType] ?? crop;
 
+const mapCommodity = (row: CommodityRow): Commodity => ({
+  cropType: toCropType(row.slug),
+  label: row.name,
+  unit: row.unit,
+});
+
 const toRegionId = (location: string | null | undefined): RegionId =>
   (location ? REGION_BY_LABEL.get(location.trim().toLowerCase()) : undefined) ??
   'oyo';
@@ -758,6 +836,17 @@ const initials = (name: string): string =>
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('') || 'OF';
+
+/** Today's date as an ISO day string (YYYY-MM-DD). */
+const today = (): string => new Date().toISOString().slice(0, 10);
+
+/** Turn a display name into a stable commodity slug ("Yellow Maize" → "yellow_maize"). */
+const slugify = (value: string): string =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 
 /** Last 10 digits — tolerant of `+234`, spaces, and leading-zero variants. */
 const phoneKey = (phone: string): string => normalizePhone(phone).slice(-10);
@@ -856,6 +945,15 @@ const writeCache = <T>(key: string, data: T): void => {
   }
 };
 
+/** Drop a cache entry so the next read re-fetches (used after a write). */
+const clearCache = (key: string): void => {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // best-effort
+  }
+};
+
 // --- Row → domain mappers ----------------------------------------------------
 
 const mapUser = (row: UserRow): User => ({
@@ -932,24 +1030,28 @@ const mapInquiry = (row: SupplierInquiryRow): SupplierInquiry => ({
 
 /** Collapse per-location commodity rows into one CommodityPrice per crop. */
 const aggregatePrices = (rows: PriceRow[]): CommodityPrice[] => {
-  const byCrop = new Map<string, Map<string, number[]>>();
+  const byCrop = new Map<string, Map<string, PriceRow[]>>();
   for (const row of rows) {
-    const dates = byCrop.get(row.crop_type) ?? new Map<string, number[]>();
+    const dates = byCrop.get(row.crop_type) ?? new Map<string, PriceRow[]>();
     byCrop.set(row.crop_type, dates);
     const list = dates.get(row.date) ?? [];
-    list.push(Number(row.price));
+    list.push(row);
     dates.set(row.date, list);
   }
 
   const result: CommodityPrice[] = [];
   for (const [crop, dateMap] of byCrop) {
     const dates = [...dateMap.keys()].sort((a, b) => b.localeCompare(a));
-    const mean = (d: string): number => {
+    // An admin-set "National" row is the authoritative price for its day;
+    // otherwise fall back to the mean across the day's locations.
+    const priceOn = (d: string): number => {
       const list = dateMap.get(d) ?? [];
-      return list.reduce((sum, n) => sum + n, 0) / (list.length || 1);
+      const national = list.find((r) => r.location === 'National');
+      if (national) return Number(national.price);
+      return list.reduce((sum, r) => sum + Number(r.price), 0) / (list.length || 1);
     };
-    const latest = mean(dates[0]);
-    const previous = dates[1] ? mean(dates[1]) : latest;
+    const latest = priceOn(dates[0]);
+    const previous = dates[1] ? priceOn(dates[1]) : latest;
     const changePercent = previous
       ? Math.round(((latest - previous) / previous) * 1000) / 10
       : 0;
@@ -1240,30 +1342,47 @@ class SupabaseApi implements AgroApi {
     return null;
   }
 
+  /**
+   * The commodity reference list. Falls back to the built-in list if the
+   * `commodities` table hasn't been created yet, so the UI never breaks.
+   */
+  private async fetchCommodities(): Promise<Commodity[]> {
+    const { data, error } = await supabase
+      .from('commodities')
+      .select('slug, name, unit, sort')
+      .eq('active', true)
+      .order('sort', { ascending: true })
+      .order('name', { ascending: true });
+    if (error || !data) {
+      return commodityPrices.map((p) => ({
+        cropType: p.cropType,
+        label: p.label,
+        unit: p.unit,
+      }));
+    }
+    return (data as CommodityRow[]).map(mapCommodity);
+  }
+
+  async getCommodities(): Promise<Commodity[]> {
+    debug('getCommodities');
+    return this.fetchCommodities();
+  }
+
   async getCommodityPrices(): Promise<CommodityPrice[]> {
     debug('getCommodityPrices');
     const fresh = readFreshCache<CommodityPrice[]>(PRICES_CACHE);
     if (fresh) return fresh;
 
-    // Discover the crops present, then pull each crop's recent rows separately —
-    // a single flat `limit()` ordered by date can push a low-frequency crop out
-    // of the window entirely, dropping it from the result.
-    const cropsRes = await supabase.from('commodity_prices').select('crop_type');
-    if (cropsRes.error) {
-      const stale = readStaleCache<CommodityPrice[]>(PRICES_CACHE);
-      if (stale) return stale;
-      return fail(cropsRes.error, 502);
-    }
-    const crops = [
-      ...new Set(((cropsRes.data ?? []) as { crop_type: string }[]).map((r) => r.crop_type)),
-    ];
-
+    // The reference table is the authoritative crop list — pull each crop's
+    // recent rows separately so a low-frequency crop isn't pushed out of a flat
+    // window, and so commodities with no prices yet still appear.
+    const commodities = await this.fetchCommodities();
     const perCrop = await Promise.all(
-      crops.map((crop) =>
+      commodities.map((c) =>
         supabase
           .from('commodity_prices')
           .select('crop_type, location, price, date')
-          .eq('crop_type', crop)
+          .eq('crop_type', toDbCrop(c.cropType))
           .order('date', { ascending: false })
           .limit(60),
       ),
@@ -1276,9 +1395,73 @@ class SupabaseApi implements AgroApi {
     }
 
     const rows = perCrop.flatMap((r) => (r.data ?? []) as PriceRow[]);
-    const result = aggregatePrices(rows);
+    const priced = new Map(
+      aggregatePrices(rows).map((p) => [String(p.cropType), p] as const),
+    );
+    // One row per commodity; labels/units come from the reference table.
+    const result: CommodityPrice[] = commodities.map((c) => {
+      const p = priced.get(String(c.cropType));
+      return {
+        cropType: c.cropType,
+        label: c.label,
+        unit: c.unit,
+        price: p?.price ?? 0,
+        changePercent: p?.changePercent ?? 0,
+        updatedAt: p?.updatedAt ?? '',
+      };
+    });
     writeCache(PRICES_CACHE, result);
     return result;
+  }
+
+  async createCommodity(input: CommodityInput): Promise<Commodity> {
+    debug('createCommodity', input.label);
+    const slug = slugify(input.label);
+    if (!slug) fail({ message: 'A commodity name is required.' }, 400);
+    const { data, error } = await supabase
+      .from('commodities')
+      .insert({ slug, name: input.label.trim(), unit: input.unit.trim() })
+      .select('slug, name, unit')
+      .single();
+    if (error) {
+      if (/duplicate|already exists|unique/i.test(error.message)) {
+        fail({ message: 'That commodity already exists.' }, 409);
+      }
+      fail(error);
+    }
+    clearCache(PRICES_CACHE);
+    return mapCommodity(data as CommodityRow);
+  }
+
+  async updateCommodityPrice(
+    cropType: CropType,
+    price: number,
+  ): Promise<CommodityPrice> {
+    debug('updateCommodityPrice', cropType, price);
+    const dbCrop = toDbCrop(cropType);
+    const day = today();
+    // Admin sets an authoritative national price for today. Replace any existing
+    // national row for the day so repeated saves stay idempotent.
+    await supabase
+      .from('commodity_prices')
+      .delete()
+      .eq('crop_type', dbCrop)
+      .eq('location', 'National')
+      .eq('date', day);
+    const { error } = await supabase
+      .from('commodity_prices')
+      .insert({ crop_type: dbCrop, location: 'National', price, date: day });
+    if (error) fail(error);
+    clearCache(PRICES_CACHE);
+    const meta = (await this.fetchCommodities()).find((c) => c.cropType === cropType);
+    return {
+      cropType,
+      label: meta?.label ?? String(cropType),
+      unit: meta?.unit ?? 'per kg',
+      price,
+      changePercent: 0,
+      updatedAt: day,
+    };
   }
 
   async getWeather(region: RegionId): Promise<WeatherForecast> {

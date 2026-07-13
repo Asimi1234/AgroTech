@@ -6,11 +6,21 @@
     "edit": "Edit prices",
     "cancel": "Cancel",
     "save": "Save changes",
-    "saved": "Changes saved in this session. Persistence is added in Phase 2.",
+    "saved": "Prices updated.",
+    "saveError": "Couldn't save. Please try again.",
     "colCommodity": "Commodity",
     "colUnit": "Unit",
     "colPrice": "Price",
-    "colChange": "Change"
+    "colChange": "Change",
+    "add": "Add commodity",
+    "added": "Commodity added.",
+    "addName": "Commodity name",
+    "addNamePlaceholder": "e.g. Yam",
+    "addUnit": "Unit",
+    "addUnitPlaceholder": "per kg",
+    "addPrice": "Current price (₦)",
+    "addSubmit": "Add",
+    "addCancel": "Cancel"
   },
   "weather": {
     "title": "Weather Data",
