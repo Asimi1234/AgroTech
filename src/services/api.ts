@@ -1124,13 +1124,8 @@ class SupabaseApi implements AgroApi {
     debug('register', payload.role);
     const email = phoneToEmail(payload.phone);
     const password = pinToPassword(payload.pin);
-    const conflict = (): never => {
-      const apiError: ApiError = {
-        status: 409,
-        message: 'An account with this phone number already exists.',
-      };
-      throw apiError;
-    };
+    const conflict = (): never =>
+      fail({ message: 'An account with this phone number already exists.' }, 409);
 
     // Demo phones are reserved for the built-in demo logins.
     if (demoCredentials.some((c) => phoneKey(c.phone) === phoneKey(payload.phone))) {

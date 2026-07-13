@@ -1,4 +1,5 @@
 import i18n from '@/i18n';
+import type { ContentI18n } from '@/types';
 
 /**
  * Localized overrides for dynamic catalog data (products, suppliers, advisories,
@@ -386,8 +387,8 @@ const withLang = <T>(pick: (c: CatalogText) => T | undefined): T | undefined => 
  * precedence over the static dictionaries below, which remain as the mock-mode
  * fallback keyed by seed ids.
  */
-type RowI18n = Partial<Record<Lang, Partial<Record<string, string>>>> | undefined;
-const fromRow = (i18n: RowI18n, field: string): string | undefined => {
+type RowI18n = ContentI18n<string>;
+const fromRow = (i18n: RowI18n | undefined, field: string): string | undefined => {
   const lang = activeLang();
   return lang ? i18n?.[lang]?.[field] : undefined;
 };
@@ -417,62 +418,45 @@ export const memberRole = (en: string): string =>
 export const supplierName = (id: string, en: string): string =>
   withLang((c) => c.suppliers[id]) ?? en;
 
-export const productName = (p: {
-  id: string;
-  name: string;
-  i18n?: RowI18n;
-}): string =>
-  fromRow(p.i18n, 'name') ?? withLang((c) => c.products[p.id]?.name) ?? p.name;
+/**
+ * Resolve a row's localized free-text field with a fixed precedence:
+ * backend-served translation → static catalog dictionary → English fallback.
+ */
+const rowText = (
+  row: { id: string; i18n?: RowI18n },
+  field: string,
+  fromCatalog: (c: CatalogText) => string | undefined,
+  en: string,
+): string => fromRow(row.i18n, field) ?? withLang(fromCatalog) ?? en;
+
+export const productName = (p: { id: string; name: string; i18n?: RowI18n }): string =>
+  rowText(p, 'name', (c) => c.products[p.id]?.name, p.name);
 
 export const productDescription = (p: {
   id: string;
   description: string;
   i18n?: RowI18n;
 }): string =>
-  fromRow(p.i18n, 'description') ??
-  withLang((c) => c.products[p.id]?.description) ??
-  p.description;
+  rowText(p, 'description', (c) => c.products[p.id]?.description, p.description);
 
-export const advisoryTitle = (a: {
-  id: string;
-  title: string;
-  i18n?: RowI18n;
-}): string =>
-  fromRow(a.i18n, 'title') ?? withLang((c) => c.advisories[a.id]?.title) ?? a.title;
+export const advisoryTitle = (a: { id: string; title: string; i18n?: RowI18n }): string =>
+  rowText(a, 'title', (c) => c.advisories[a.id]?.title, a.title);
 
-export const advisoryWindow = (a: {
-  id: string;
-  window: string;
-  i18n?: RowI18n;
-}): string =>
-  fromRow(a.i18n, 'window') ??
-  withLang((c) => c.advisories[a.id]?.window) ??
-  a.window;
+export const advisoryWindow = (a: { id: string; window: string; i18n?: RowI18n }): string =>
+  rowText(a, 'window', (c) => c.advisories[a.id]?.window, a.window);
 
-export const advisoryDetail = (a: {
-  id: string;
-  detail: string;
-  i18n?: RowI18n;
-}): string =>
-  fromRow(a.i18n, 'detail') ??
-  withLang((c) => c.advisories[a.id]?.detail) ??
-  a.detail;
+export const advisoryDetail = (a: { id: string; detail: string; i18n?: RowI18n }): string =>
+  rowText(a, 'detail', (c) => c.advisories[a.id]?.detail, a.detail);
 
-export const cooperativeName = (g: {
-  id: string;
-  name: string;
-  i18n?: RowI18n;
-}): string =>
-  fromRow(g.i18n, 'name') ?? withLang((c) => c.cooperatives[g.id]?.name) ?? g.name;
+export const cooperativeName = (g: { id: string; name: string; i18n?: RowI18n }): string =>
+  rowText(g, 'name', (c) => c.cooperatives[g.id]?.name, g.name);
 
 export const cooperativeDescription = (g: {
   id: string;
   description: string;
   i18n?: RowI18n;
 }): string =>
-  fromRow(g.i18n, 'description') ??
-  withLang((c) => c.cooperatives[g.id]?.description) ??
-  g.description;
+  rowText(g, 'description', (c) => c.cooperatives[g.id]?.description, g.description);
 
 export const reviewComment = (r: { id: string; comment: string }): string =>
   withLang((c) => c.reviews[r.id]) ?? r.comment;
