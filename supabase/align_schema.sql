@@ -1,6 +1,6 @@
 -- Align the Supabase schema with the app's domain types (src/types/index.ts).
 -- Idempotent: safe to run more than once. Paste into the Supabase SQL editor.
--- Closes the gaps SupabaseApi would otherwise infer/default: PIN, user status,
+-- Closes the gaps SupabaseApi would otherwise infer/default: user status,
 -- product category/unit/stock, weather condition/humidity, advisory
 -- severity/window, group description + member role, and supplier inquiries.
 -- Reserved keywords "unit" and "window" are quoted so Postgres accepts them.
@@ -8,9 +8,10 @@
 begin;
 
 -- ---------------------------------------------------------------------------
--- USERS: auth PIN + activation status + last-active timestamp
+-- USERS: activation status + last-active timestamp
+-- (Auth/passwords are handled by Supabase Auth — see auth_rls.sql — so no PIN
+-- column is added here.)
 -- ---------------------------------------------------------------------------
-alter table users add column if not exists pin text not null default '1234';
 alter table users add column if not exists status text not null default 'active';
 alter table users add column if not exists last_active timestamptz;
 

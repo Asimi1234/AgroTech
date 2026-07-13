@@ -61,7 +61,7 @@ create policy users_update_own  on public.users for update
 -- Prevent privilege escalation: the row-ownership check above would otherwise
 -- let a user set their own role to 'admin'. Only an existing admin (or the
 -- seeded demo-admin identity, matched on its non-spoofable JWT email) may
--- create or assign the admin role, and non-admins may not change role at all.
+-- create the admin role, and non-admins may not change an existing role.
 create or replace function public.enforce_role_guard()
   returns trigger
   language plpgsql
@@ -69,15 +69,24 @@ create or replace function public.enforce_role_guard()
   set search_path = public
 as $$
 begin
-  if new.role = 'admin'
-     and not public.is_admin()
-     and coalesce(auth.jwt() ->> 'email', '') <> '7000000000@ojafarm.local' then
-    raise exception 'not authorized to assign admin role';
+  -- Only guard writes that arrive through the API (a client JWT). Migrations
+  -- and seeds run by the table owner / service_role bypass this, like RLS.
+  if coalesce(auth.role(), '') not in ('anon', 'authenticated') then
+    return new;
   end if;
-  if tg_op = 'UPDATE'
-     and new.role is distinct from old.role
-     and not public.is_admin() then
-    raise exception 'not authorized to change role';
+
+  if tg_op = 'INSERT' then
+    -- Creating an admin requires already being one, or the demo-admin identity.
+    if new.role = 'admin'
+       and not public.is_admin()
+       and coalesce(auth.jwt() ->> 'email', '') <> '7000000000@ojafarm.local' then
+      raise exception 'not authorized to create admin accounts';
+    end if;
+  elsif tg_op = 'UPDATE' then
+    -- Changing an existing row's role (e.g. self-promotion) requires admin.
+    if new.role is distinct from old.role and not public.is_admin() then
+      raise exception 'not authorized to change role';
+    end if;
   end if;
   return new;
 end;
