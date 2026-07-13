@@ -1206,7 +1206,9 @@ class SupabaseApi implements AgroApi {
 
   async logout(): Promise<void> {
     debug('logout');
-    await supabase.auth.signOut();
+    // 'local' clears the persisted session immediately instead of deferring the
+    // storage wipe behind a network token-revoke that can hang/fail offline.
+    await supabase.auth.signOut({ scope: 'local' });
   }
 
   async restoreSession(): Promise<AuthenticatedUser | null> {
@@ -1245,18 +1247,38 @@ class SupabaseApi implements AgroApi {
     const fresh = readFreshCache<CommodityPrice[]>(PRICES_CACHE);
     if (fresh) return fresh;
 
-    const { data, error } = await supabase
-      .from('commodity_prices')
-      .select('crop_type, location, price, date')
-      .order('date', { ascending: false })
-      .limit(500);
-    if (error) {
+    // Discover the crops present, then pull each crop's recent rows separately —
+    // a single flat `limit()` ordered by date can push a low-frequency crop out
+    // of the window entirely, dropping it from the result.
+    const cropsRes = await supabase.from('commodity_prices').select('crop_type');
+    if (cropsRes.error) {
       const stale = readStaleCache<CommodityPrice[]>(PRICES_CACHE);
       if (stale) return stale;
-      return fail(error, 502);
+      return fail(cropsRes.error, 502);
+    }
+    const crops = [
+      ...new Set(((cropsRes.data ?? []) as { crop_type: string }[]).map((r) => r.crop_type)),
+    ];
+
+    const perCrop = await Promise.all(
+      crops.map((crop) =>
+        supabase
+          .from('commodity_prices')
+          .select('crop_type, location, price, date')
+          .eq('crop_type', crop)
+          .order('date', { ascending: false })
+          .limit(60),
+      ),
+    );
+    const failed = perCrop.find((r) => r.error);
+    if (failed) {
+      const stale = readStaleCache<CommodityPrice[]>(PRICES_CACHE);
+      if (stale) return stale;
+      return fail(failed.error, 502);
     }
 
-    const result = aggregatePrices((data ?? []) as PriceRow[]);
+    const rows = perCrop.flatMap((r) => (r.data ?? []) as PriceRow[]);
+    const result = aggregatePrices(rows);
     writeCache(PRICES_CACHE, result);
     return result;
   }
@@ -1621,7 +1643,9 @@ class SupabaseApi implements AgroApi {
       phone: user.phone ?? '',
       region: toRegionId(user.location),
       rating: Math.round(rating * 10) / 10,
-      reviewCount: ratings.length,
+      // No reviews table exists; `rating` is derived from the supplier's product
+      // ratings, but there are genuinely zero written reviews to count.
+      reviewCount: 0,
       verified: true,
       joinedYear: new Date(user.created_at).getFullYear() || new Date().getFullYear(),
     };
@@ -1664,15 +1688,35 @@ class SupabaseApi implements AgroApi {
 
   async getPlatformAnalytics(): Promise<PlatformAnalytics> {
     debug('getPlatformAnalytics');
-    const [usersRes, productsRes, groupsRes, membersRes] = await Promise.all([
-      supabase.from('users').select('*'),
-      supabase.from('products').select('*'),
+    const [
+      userRowsRes,
+      productRowsRes,
+      groupsRes,
+      membersRes,
+      totalUsersRes,
+      activeUsersRes,
+      totalListingsRes,
+    ] = await Promise.all([
+      // Trimmed rows drive the per-region / per-category breakdowns…
+      supabase.from('users').select('location'),
+      supabase.from('products').select('name, description, category'),
       supabase.from('groups').select('*', { count: 'exact', head: true }),
       supabase.from('group_members').select('*', { count: 'exact', head: true }),
+      // …while the headline totals use exact counts (not array length, which
+      // PostgREST caps ~1000).
+      supabase.from('users').select('*', { count: 'exact', head: true }),
+      supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active'),
+      supabase.from('products').select('*', { count: 'exact', head: true }),
     ]);
 
-    const userRows = ((usersRes.data ?? []) as UserRow[]).map(mapUser);
-    const productRows = (productsRes.data ?? []) as ProductRow[];
+    const userRows = (userRowsRes.data ?? []) as { location: string | null }[];
+    const productRows = (productRowsRes.data ?? []) as Pick<
+      ProductRow,
+      'name' | 'description' | 'category'
+    >[];
 
     const listingsByCategory = productCategories
       .map((c) => ({
@@ -1691,15 +1735,15 @@ class SupabaseApi implements AgroApi {
       .map((r) => ({
         region: r.id,
         label: r.label,
-        count: userRows.filter((u) => u.region === r.id).length,
+        count: userRows.filter((u) => toRegionId(u.location) === r.id).length,
       }))
       .filter((r) => r.count > 0)
       .sort((a, b) => b.count - a.count);
 
     return {
-      totalUsers: userRows.length,
-      activeUsers: userRows.filter((u) => u.status === 'active').length,
-      totalListings: productRows.length,
+      totalUsers: totalUsersRes.count ?? 0,
+      activeUsers: activeUsersRes.count ?? 0,
+      totalListings: totalListingsRes.count ?? 0,
       cooperativeCount: groupsRes.count ?? 0,
       cooperativeMembers: membersRes.count ?? 0,
       listingsByCategory,

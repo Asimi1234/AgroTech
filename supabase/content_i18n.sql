@@ -10,6 +10,11 @@
 -- NOTE: ha/yo/ig values are best-effort and reuse the app's existing catalog
 -- vocabulary; they need native-speaker review before production.
 -- Idempotent; safe to re-run. Run AFTER align_schema.sql.
+--
+-- Rows are matched by their (non-unique) seed name/title. If two seed rows ever
+-- share a name they'd receive the same translation, which is acceptable — same
+-- display text, same localization. New/user-generated rows get no translation
+-- and fall back to English.
 
 begin;
 

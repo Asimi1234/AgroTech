@@ -28,13 +28,14 @@ alter table products add column if not exists category text;
 alter table products add column if not exists "unit" text;
 alter table products add column if not exists in_stock boolean not null default true;
 
+-- Patterns and the name+description search mirror guessCategory() in
+-- src/services/api.ts exactly so the one-time backfill and the runtime fallback
+-- agree (note 'protection' in the crop-protection set).
 update products set category = case
-  when name ~* 'seed|cutting|seedling|stem|sapling'                     then 'seed'
-  when name ~* 'fertil|manure|npk|urea|nutrient|compost'
-    or description ~* 'fertil|manure|npk|urea|nutrient|compost'         then 'fertilizer'
-  when name ~* 'herbicide|pesticide|fungicide|insecticide|spray'
-    or description ~* 'herbicide|pesticide|fungicide|insecticide|spray' then 'crop-protection'
-  when name ~* 'tractor|equipment|sprayer|machine|tool|pump|tiller'     then 'equipment'
+  when name || ' ' || coalesce(description, '') ~* 'seed|cutting|seedling|stem|sapling'                        then 'seed'
+  when name || ' ' || coalesce(description, '') ~* 'fertil|manure|npk|urea|nutrient|compost'                   then 'fertilizer'
+  when name || ' ' || coalesce(description, '') ~* 'herbicide|pesticide|fungicide|insecticide|protection|spray' then 'crop-protection'
+  when name || ' ' || coalesce(description, '') ~* 'tractor|equipment|sprayer|machine|tool|pump|tiller'        then 'equipment'
   else 'produce'
 end
 where category is null;
