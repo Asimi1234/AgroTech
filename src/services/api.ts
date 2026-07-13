@@ -1,14 +1,17 @@
 import { env } from '@/config/env';
 import {
+  baseCommodities,
+  cropLabel,
+  productCategories,
+  regions,
+} from '@/data/reference';
+import {
   advisories,
   buildProductDetail,
   commodityPrices,
   cooperatives,
-  cropLabel,
   demoCredentials,
-  productCategories,
   products,
-  regions,
   supplierInquiries,
   suppliers,
   users,
@@ -796,7 +799,7 @@ const REGION_BY_LABEL = new Map(
   regions.map((r) => [r.label.toLowerCase(), r.id] as const),
 );
 const CROP_META = new Map(
-  commodityPrices.map((c) => [c.cropType, { label: c.label, unit: c.unit }] as const),
+  baseCommodities.map((c) => [c.cropType, { label: c.label, unit: c.unit }] as const),
 );
 
 // The database stores oil palm as `palm_oil`; the app's CropType enum uses
@@ -1354,11 +1357,7 @@ class SupabaseApi implements AgroApi {
       .order('sort', { ascending: true })
       .order('name', { ascending: true });
     if (error || !data) {
-      return commodityPrices.map((p) => ({
-        cropType: p.cropType,
-        label: p.label,
-        unit: p.unit,
-      }));
+      return baseCommodities;
     }
     return (data as CommodityRow[]).map(mapCommodity);
   }

@@ -2,18 +2,29 @@ import type {
   Advisory,
   CommodityPrice,
   Cooperative,
-  CropInfo,
   Credentials,
   Product,
   ProductDetail,
-  Region,
   Supplier,
   SupplierInquiry,
   User,
   WeatherForecast,
 } from '@/types';
 import { placeholderImage } from './placeholderImage';
-import { catalogCategory, catalogCrop, catalogRegion } from '@/i18n/catalog';
+
+// Fixed reference data + label helpers live in `reference.ts` (shared by both
+// backends). Imported for use in the seeds below and re-exported so existing
+// `@/data/mockData` imports keep working; new code should import reference data
+// from `@/data/reference` directly.
+import {
+  crops,
+  regions,
+  productCategories,
+  cropLabel,
+  regionLabel,
+  categoryLabel,
+} from './reference';
+export { crops, regions, productCategories, cropLabel, regionLabel, categoryLabel };
 
 /**
  * Deterministic pseudo-random dates so activity timestamps (inquiries, reviews,
@@ -62,70 +73,6 @@ const threadTimestamp = (
   const day = new Date(base + msgIndex * gapHours * 3_600_000);
   return `${fmtDate(day)} ${pad2(day.getHours())}:${pad2(day.getMinutes())}`;
 };
-
-export const crops: CropInfo[] = [
-  { id: 'cassava', label: 'Cassava' },
-  { id: 'maize', label: 'Maize' },
-  { id: 'oil-palm', label: 'Oil Palm' },
-  { id: 'rice', label: 'Rice' },
-];
-
-export const regions: Region[] = [
-  { id: 'abia', label: 'Abia' },
-  { id: 'adamawa', label: 'Adamawa' },
-  { id: 'akwa-ibom', label: 'Akwa Ibom' },
-  { id: 'anambra', label: 'Anambra' },
-  { id: 'bauchi', label: 'Bauchi' },
-  { id: 'bayelsa', label: 'Bayelsa' },
-  { id: 'benue', label: 'Benue' },
-  { id: 'borno', label: 'Borno' },
-  { id: 'cross-river', label: 'Cross River' },
-  { id: 'delta', label: 'Delta' },
-  { id: 'ebonyi', label: 'Ebonyi' },
-  { id: 'edo', label: 'Edo' },
-  { id: 'ekiti', label: 'Ekiti' },
-  { id: 'enugu', label: 'Enugu' },
-  { id: 'fct', label: 'FCT (Abuja)' },
-  { id: 'gombe', label: 'Gombe' },
-  { id: 'imo', label: 'Imo' },
-  { id: 'jigawa', label: 'Jigawa' },
-  { id: 'kaduna', label: 'Kaduna' },
-  { id: 'kano', label: 'Kano' },
-  { id: 'katsina', label: 'Katsina' },
-  { id: 'kebbi', label: 'Kebbi' },
-  { id: 'kogi', label: 'Kogi' },
-  { id: 'kwara', label: 'Kwara' },
-  { id: 'lagos', label: 'Lagos' },
-  { id: 'nasarawa', label: 'Nasarawa' },
-  { id: 'niger', label: 'Niger' },
-  { id: 'ogun', label: 'Ogun' },
-  { id: 'ondo', label: 'Ondo' },
-  { id: 'osun', label: 'Osun' },
-  { id: 'oyo', label: 'Oyo' },
-  { id: 'plateau', label: 'Plateau' },
-  { id: 'rivers', label: 'Rivers' },
-  { id: 'sokoto', label: 'Sokoto' },
-  { id: 'taraba', label: 'Taraba' },
-  { id: 'yobe', label: 'Yobe' },
-  { id: 'zamfara', label: 'Zamfara' },
-];
-
-export const productCategories: { id: Product['category']; label: string }[] = [
-  { id: 'seed', label: 'Seed' },
-  { id: 'fertilizer', label: 'Fertilizer' },
-  { id: 'equipment', label: 'Equipment' },
-  { id: 'crop-protection', label: 'Crop protection' },
-  { id: 'produce', label: 'Produce' },
-];
-
-export const cropLabel = (id: string): string =>
-  catalogCrop(id) ?? crops.find((c) => c.id === id)?.label ?? id;
-
-export const regionLabel = (id: string): string =>
-  catalogRegion(id) ?? regions.find((r) => r.id === id)?.label ?? id;
-
-export const categoryLabel = (id: string): string =>
-  catalogCategory(id) ?? productCategories.find((c) => c.id === id)?.label ?? id;
 
 export const suppliers: Supplier[] = [
   { id: 's1', name: 'GreenField Agro Inputs', phone: '+234 803 111 2200', region: 'oyo', rating: 4.7, reviewCount: 128, verified: true, joinedYear: 2019 },
