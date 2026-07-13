@@ -8,6 +8,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Logo } from '@/components/layout/Logo';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { api, isApiError } from '@/services/api';
+import { env } from '@/config/env';
 import { useAuthStore } from '@/store/authStore';
 import { demoCredentials } from '@/data/mockData';
 import { cn } from '@/lib/cn';
@@ -161,24 +162,26 @@ export const LoginPage = () => {
               </Button>
             </form>
 
-            <div className="mt-4 rounded-lg border border-dashed border-earth-300 bg-earth-50 p-3">
-              <p className="text-xs font-semibold text-slate-700">
-                {t('login.demoTitle')}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {demoCredentials.find((c) => c.role === role)?.phone} —{' '}
-                {t(`roles.${role}`)}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2"
-                type="button"
-                onClick={fillDemo}
-              >
-                {t('login.fillDemo')}
-              </Button>
-            </div>
+            {env.enableDemo && (
+              <div className="mt-4 rounded-lg border border-dashed border-earth-300 bg-earth-50 p-3">
+                <p className="text-xs font-semibold text-slate-700">
+                  {t('login.demoTitle')}
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  {demoCredentials.find((c) => c.role === role)?.phone} —{' '}
+                  {t(`roles.${role}`)}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  type="button"
+                  onClick={fillDemo}
+                >
+                  {t('login.fillDemo')}
+                </Button>
+              </div>
+            )}
 
             <p className="mt-4 text-center text-sm text-slate-600">
               {t('login.newHere')}{' '}

@@ -24,4 +24,8 @@ export const env = {
     import.meta.env.VITE_SUPABASE_URL ?? import.meta.env.VITE_API_BASE_URL,
   ),
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+  // Demo login helpers (prefilled credentials on the login screen). On in dev;
+  // off in production unless explicitly enabled, so a live deployment never
+  // advertises the built-in demo accounts.
+  enableDemo: parseBoolean(import.meta.env.VITE_ENABLE_DEMO, import.meta.env.DEV),
 } as const;
