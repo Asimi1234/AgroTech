@@ -1,9 +1,10 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PageLoader } from '@/components/ui/PageLoader';
+import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { useAuthStore } from '@/store/authStore';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'));
@@ -23,9 +24,17 @@ const DashboardRoute = () => {
   return role === 'supplier' ? <SupplierDashboard /> : <FarmerDashboard />;
 };
 
+/** Landing page for guests; a live session skips straight to the dashboard. */
+const HomeRoute = () => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
+};
+
 export const App = () => {
   const bootstrap = useAuthStore((s) => s.bootstrap);
   const hydrated = useAuthStore((s) => s.hydrated);
+
+  useIdleTimeout();
 
   useEffect(() => {
     void bootstrap();
@@ -39,7 +48,7 @@ export const App = () => {
     <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
 

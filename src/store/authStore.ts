@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api, usesServerAuth } from '@/services/api';
 import type { AuthenticatedUser } from '@/services/api';
+import { clearActive, idleLimitForRole, isIdleExpired, markActive } from '@/services/session';
 
 interface AuthState {
   user: AuthenticatedUser | null;
@@ -21,20 +22,33 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       // Mock/HTTP: the persisted store IS the session, so it's ready immediately.
       hydrated: !usesServerAuth,
-      setUser: (user) => set({ user, isAuthenticated: true }),
+      setUser: (user) => {
+        markActive(idleLimitForRole(user.role));
+        set({ user, isAuthenticated: true });
+      },
       logout: () => {
         void api.logout();
+        clearActive();
         set({ user: null, isAuthenticated: false });
       },
       bootstrap: async () => {
         if (!usesServerAuth) return;
         try {
+          // Idle too long since last activity — drop the stale session so the
+          // user re-authenticates instead of resuming straight into the app.
+          if (isIdleExpired()) {
+            await api.logout();
+            clearActive();
+            set({ user: null, isAuthenticated: false });
+            return;
+          }
           const user = await api.restoreSession();
-          set(
-            user
-              ? { user, isAuthenticated: true }
-              : { user: null, isAuthenticated: false },
-          );
+          if (user) {
+            markActive(idleLimitForRole(user.role));
+            set({ user, isAuthenticated: true });
+          } else {
+            set({ user: null, isAuthenticated: false });
+          }
         } catch {
           // Never let a bootstrap failure wedge the app on the loader.
           set({ user: null, isAuthenticated: false });
