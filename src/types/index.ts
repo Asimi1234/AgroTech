@@ -18,13 +18,45 @@ export interface CropInfo {
   label: string;
 }
 
+/** Nigeria's 36 states plus the Federal Capital Territory. */
 export type RegionId =
-  | 'oyo'
-  | 'kaduna'
+  | 'abia'
+  | 'adamawa'
+  | 'akwa-ibom'
+  | 'anambra'
+  | 'bauchi'
+  | 'bayelsa'
   | 'benue'
+  | 'borno'
   | 'cross-river'
+  | 'delta'
+  | 'ebonyi'
+  | 'edo'
+  | 'ekiti'
+  | 'enugu'
+  | 'fct'
+  | 'gombe'
+  | 'imo'
+  | 'jigawa'
+  | 'kaduna'
   | 'kano'
-  | 'enugu';
+  | 'katsina'
+  | 'kebbi'
+  | 'kogi'
+  | 'kwara'
+  | 'lagos'
+  | 'nasarawa'
+  | 'niger'
+  | 'ogun'
+  | 'ondo'
+  | 'osun'
+  | 'oyo'
+  | 'plateau'
+  | 'rivers'
+  | 'sokoto'
+  | 'taraba'
+  | 'yobe'
+  | 'zamfara';
 
 export interface Region {
   id: RegionId;
