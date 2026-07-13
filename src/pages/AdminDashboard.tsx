@@ -47,6 +47,7 @@ const PriceEditor = () => {
   const [newName, setNewName] = useState('');
   const [newUnit, setNewUnit] = useState('per kg');
   const [newPrice, setNewPrice] = useState('');
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     if (data) setRows(data);
@@ -103,6 +104,14 @@ const PriceEditor = () => {
       setNewUnit('per kg');
       setNewPrice('');
     }
+  };
+
+  const removeCommodity = async (cropType: string) => {
+    const ok = await runWrite(
+      () => api.deleteCommodity(cropType),
+      t('prices.removed'),
+    );
+    if (ok) setConfirmId(null);
   };
 
   return (
@@ -223,7 +232,10 @@ const PriceEditor = () => {
                     <th className="py-2 pr-3 font-semibold">{t('prices.colCommodity')}</th>
                     <th className="py-2 pr-3 font-semibold">{t('prices.colUnit')}</th>
                     <th className="py-2 pr-3 font-semibold">{t('prices.colPrice')}</th>
-                    <th className="py-2 font-semibold">{t('prices.colChange')}</th>
+                    <th className="py-2 pr-3 font-semibold">{t('prices.colChange')}</th>
+                    {!editing && (
+                      <th className="py-2 font-semibold">{t('prices.colActions')}</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -254,7 +266,7 @@ const PriceEditor = () => {
                           </span>
                         )}
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 pr-3">
                         <Badge
                           tone={row.changePercent >= 0 ? 'success' : 'danger'}
                         >
@@ -262,6 +274,30 @@ const PriceEditor = () => {
                           {row.changePercent.toFixed(1)}%
                         </Badge>
                       </td>
+                      {!editing && (
+                        <td className="py-3">
+                          {confirmId === row.cropType ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={saving}
+                              onClick={() => removeCommodity(row.cropType)}
+                              className="text-red-700"
+                            >
+                              {t('prices.confirmRemove')}
+                            </Button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmId(row.cropType)}
+                              aria-label={t('prices.remove')}
+                              className="focus-ring rounded-lg p-2 text-slate-500 hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Icon name="trash" className="h-4 w-4" />
+                            </button>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

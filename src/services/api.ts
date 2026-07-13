@@ -134,6 +134,8 @@ export interface AgroApi {
   getCommodities(): Promise<Commodity[]>;
   /** Add a commodity to the reference table (admin only). */
   createCommodity(input: CommodityInput): Promise<Commodity>;
+  /** Remove a commodity from the reference list (admin only; soft delete). */
+  deleteCommodity(cropType: CropType): Promise<void>;
   /** Set a commodity's current price (admin only). */
   updateCommodityPrice(cropType: CropType, price: number): Promise<CommodityPrice>;
   getWeather(region: RegionId): Promise<WeatherForecast>;
@@ -377,6 +379,11 @@ class MockApi implements AgroApi {
       },
     ];
     return this.respond({ cropType, label: input.label, unit: input.unit });
+  }
+
+  async deleteCommodity(cropType: CropType): Promise<void> {
+    this.prices = this.prices.filter((p) => p.cropType !== cropType);
+    await this.respond(null);
   }
 
   async updateCommodityPrice(cropType: CropType, price: number): Promise<CommodityPrice> {
@@ -681,6 +688,10 @@ class HttpApi implements AgroApi {
       method: 'POST',
       body: JSON.stringify(input),
     });
+  }
+
+  async deleteCommodity(cropType: CropType): Promise<void> {
+    await this.request(`/commodities/${cropType}`, { method: 'DELETE' });
   }
 
   updateCommodityPrice(cropType: CropType, price: number): Promise<CommodityPrice> {
@@ -1555,6 +1566,17 @@ class SupabaseApi implements AgroApi {
     }
     clearCache(PRICES_CACHE);
     return mapCommodity(data as CommodityRow);
+  }
+
+  async deleteCommodity(cropType: CropType): Promise<void> {
+    debug('deleteCommodity', cropType);
+    // Soft delete: hide it from the list/prices but keep its price history.
+    const { error } = await supabase
+      .from('commodities')
+      .update({ active: false })
+      .eq('slug', toDbCrop(cropType));
+    if (error) fail(error);
+    clearCache(PRICES_CACHE);
   }
 
   async updateCommodityPrice(
