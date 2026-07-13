@@ -29,6 +29,7 @@ changes are required — only fill in `HttpApi`.
 | `getCooperatives()`             | `GET /cooperatives`         | `Cooperative[]`        |
 | `getCooperative(id)`            | `GET /cooperatives/:id`     | `Cooperative`          |
 | `getUsers()`                    | `GET /users`                | `User[]`               |
+| `getSupplierProfile(name)`      | `GET /suppliers/profile?name=…` | `Supplier \| null`  |
 
 ### Auth
 
@@ -41,6 +42,9 @@ AuthenticatedUser = { id, name, role, phone, region, avatarInitials }
 - `login` → **401** `{ status, message }` on bad credentials.
 - `register` → **409** if the phone already exists.
 - Phase 1 stores sessions in localStorage; Phase 2 replaces this with JWT.
+- `getSupplierProfile` → **404** when no supplier matches `name`; `HttpApi`
+  maps that to `null` rather than throwing (all other non-2xx still throw
+  `ApiError`).
 
 ### Products & pagination
 

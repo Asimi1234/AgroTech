@@ -13,7 +13,7 @@ import { QuickLinks } from '@/components/dashboard/QuickLinks';
 import { useAsync } from '@/hooks/useAsync';
 import { api } from '@/services/api';
 import { useAuthStore } from '@/store/authStore';
-import { categoryLabel, suppliers } from '@/data/mockData';
+import { categoryLabel } from '@/data/mockData';
 import { productName, unitLabel } from '@/i18n/catalog';
 import { formatNaira } from '@/lib/cn';
 import type { Product, SupplierInquiry } from '@/types';
@@ -117,17 +117,18 @@ export const SupplierDashboard = () => {
   const { t } = useTranslation('dashboard');
   const user = useAuthStore((s) => s.user);
   const firstName = user?.name.split(' ')[0] ?? '';
-  const profile = suppliers.find((s) => s.name === user?.name);
 
   const { data, loading, error, reload } = useAsync(
     () =>
       Promise.all([
         api.getProducts({ pageSize: 100 }),
         api.getSupplierInquiries(),
+        user ? api.getSupplierProfile(user.name) : Promise.resolve(null),
       ]),
-    [],
+    [user?.name],
   );
 
+  const profile = data?.[2] ?? null;
   const listings =
     data?.[0].items.filter((p) => p.supplierName === user?.name) ?? [];
   const listingIds = new Set(listings.map((p) => p.id));

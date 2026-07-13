@@ -4,15 +4,18 @@ import {
   buildProductDetail,
   commodityPrices,
   cooperatives,
+  cropLabel,
   demoCredentials,
   productCategories,
   products,
   regions,
   supplierInquiries,
+  suppliers,
   users,
   weatherForecasts,
 } from '@/data/mockData';
 import { addAccount, findAccount, phoneTaken } from './mockAccounts';
+import { supabase, supabaseConfigured } from './supabase';
 import type {
   Advisory,
   AdvisoryInput,
@@ -20,13 +23,29 @@ import type {
   Cooperative,
   CropType,
   DashboardSummary,
+  GroupMember,
   PlatformAnalytics,
   Product,
+  ProductCategory,
   ProductDetail,
   RegionId,
+  Supplier,
   SupplierInquiry,
   User,
   UserRole,
+  WeatherForecast,
+} from '@/types';
+
+// Re-export the core domain types so consumers can import them from the API
+// surface directly (`import type { Product } from '@/services/api'`).
+export type {
+  Advisory,
+  CommodityPrice,
+  Cooperative,
+  Product,
+  ProductDetail,
+  Supplier,
+  User,
   WeatherForecast,
 } from '@/types';
 
@@ -110,6 +129,8 @@ export interface AgroApi {
   getUsers(): Promise<User[]>;
   setUserStatus(id: string, status: User['status']): Promise<User>;
   getSupplierInquiries(): Promise<SupplierInquiry[]>;
+  /** The supplier directory profile for `name`, or `null` if none matches. */
+  getSupplierProfile(name: string): Promise<Supplier | null>;
   getDashboardSummary(): Promise<DashboardSummary>;
   getPlatformAnalytics(): Promise<PlatformAnalytics>;
 }
@@ -395,6 +416,11 @@ class MockApi implements AgroApi {
     return this.respond(supplierInquiries);
   }
 
+  getSupplierProfile(name: string): Promise<Supplier | null> {
+    const match = suppliers.find((s) => s.name === name) ?? null;
+    return this.respond(match);
+  }
+
   getDashboardSummary(): Promise<DashboardSummary> {
     const topMover = commodityPrices.reduce((top, price) =>
       Math.abs(price.changePercent) > Math.abs(top.changePercent) ? price : top,
@@ -550,6 +576,22 @@ class HttpApi implements AgroApi {
     return this.request('/supplier/inquiries');
   }
 
+  async getSupplierProfile(name: string): Promise<Supplier | null> {
+    const response = await fetch(
+      `${this.base}/suppliers/profile?name=${encodeURIComponent(name)}`,
+      { headers: { 'Content-Type': 'application/json' } },
+    );
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      const error: ApiError = {
+        status: response.status,
+        message: `Request failed: ${response.status}`,
+      };
+      throw error;
+    }
+    return (await response.json()) as Supplier;
+  }
+
   getDashboardSummary(): Promise<DashboardSummary> {
     return this.request('/dashboard/summary');
   }
@@ -559,7 +601,943 @@ class HttpApi implements AgroApi {
   }
 }
 
-export const api: AgroApi = env.useMockApi ? new MockApi() : new HttpApi();
+/* -------------------------------------------------------------------------- */
+/*  Supabase-backed implementation                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Raw row shapes as stored in Supabase (snake_case) after the `align_schema.sql`
+ * migration. The app's rich domain types (`src/types`) are derived via the
+ * mappers below. Columns added by the migration (`pin`, `status`, `category`,
+ * `unit`, `condition`, `severity`, …) are optional here so mappers still work
+ * against a not-yet-migrated database, falling back to inference.
+ */
+interface UserRow {
+  id: string;
+  email: string | null;
+  name: string;
+  role: string;
+  location: string | null;
+  phone: string | null;
+  pin?: string | null;
+  status?: string | null;
+  last_active?: string | null;
+  created_at: string;
+}
+interface ProductRow {
+  id: string;
+  supplier_id: string | null;
+  name: string;
+  crop_type: string;
+  price: number;
+  location: string | null;
+  rating: number | null;
+  image_url: string | null;
+  description: string | null;
+  category?: string | null;
+  unit?: string | null;
+  in_stock?: boolean | null;
+  created_at: string;
+}
+interface PriceRow {
+  crop_type: string;
+  location: string;
+  price: number;
+  date: string;
+}
+interface WeatherRow {
+  location: string;
+  temperature: number;
+  rainfall: number;
+  forecast: string;
+  condition?: string | null;
+  humidity?: number | null;
+  date: string;
+}
+interface AdvisoryRow {
+  id: string;
+  crop_type: string;
+  title: string;
+  content: string | null;
+  severity?: string | null;
+  window?: string | null;
+}
+interface GroupRow {
+  id: string;
+  name: string;
+  crop_focus: string;
+  location: string | null;
+  description?: string | null;
+}
+interface SupplierInquiryRow {
+  id: string;
+  buyer_name: string;
+  product_id: string | null;
+  product_name: string;
+  message: string;
+  phone: string | null;
+  date: string;
+}
+
+const debug = (...args: unknown[]): void => {
+  if (import.meta.env.DEV) console.debug('[api]', ...args);
+};
+
+/** Build an `ApiError` from a Supabase error and throw it. */
+const fail = (
+  error: { message?: string } | null,
+  status = 500,
+): never => {
+  const apiError: ApiError = {
+    status,
+    message: error?.message ?? 'Request failed.',
+  };
+  throw apiError;
+};
+
+const notFound = (message: string): never => {
+  const apiError: ApiError = { status: 404, message };
+  throw apiError;
+};
+
+// --- Reference-data mapping (static; reused from the shared catalog) ---------
+
+const REGION_BY_LABEL = new Map(
+  regions.map((r) => [r.label.toLowerCase(), r.id] as const),
+);
+const CROP_META = new Map(
+  commodityPrices.map((c) => [c.cropType, { label: c.label, unit: c.unit }] as const),
+);
+
+// The database stores oil palm as `palm_oil`; the app's CropType enum uses
+// `oil-palm`. Bridge the two vocabularies in both directions.
+const CROP_DB_TO_APP: Record<string, CropType> = {
+  palm_oil: 'oil-palm',
+  oil_palm: 'oil-palm',
+};
+const CROP_APP_TO_DB: Partial<Record<CropType, string>> = {
+  'oil-palm': 'palm_oil',
+};
+const toCropType = (dbCrop: string): CropType =>
+  CROP_DB_TO_APP[dbCrop] ?? (dbCrop as CropType);
+const toDbCrop = (crop: string): string =>
+  CROP_APP_TO_DB[crop as CropType] ?? crop;
+
+const toRegionId = (location: string | null | undefined): RegionId =>
+  (location ? REGION_BY_LABEL.get(location.trim().toLowerCase()) : undefined) ??
+  'oyo';
+
+const regionLabelEn = (region: RegionId): string =>
+  regions.find((r) => r.id === region)?.label ?? region;
+
+/** Region → the location string stored in Supabase (its English label). */
+const regionToLocation = regionLabelEn;
+
+const initials = (name: string): string =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('') || 'OF';
+
+/** Last 10 digits — tolerant of `+234`, spaces, and leading-zero variants. */
+const phoneKey = (phone: string): string => normalizePhone(phone).slice(-10);
+
+const guessCategory = (name: string, description: string): ProductCategory => {
+  const s = `${name} ${description}`.toLowerCase();
+  if (/seed|cutting|seedling|stem|sapling/.test(s)) return 'seed';
+  if (/fertil|manure|npk|urea|nutrient|compost/.test(s)) return 'fertilizer';
+  if (/herbicide|pesticide|fungicide|insecticide|protection|spray/.test(s))
+    return 'crop-protection';
+  if (/tractor|equipment|sprayer|machine|tool|pump|tiller/.test(s))
+    return 'equipment';
+  return 'produce';
+};
+
+const UNIT_BY_CATEGORY: Record<ProductCategory, string> = {
+  seed: 'per kg',
+  fertilizer: 'per bag',
+  'crop-protection': 'per litre',
+  equipment: 'per unit',
+  produce: 'per kg',
+};
+
+const conditionFromText = (text: string): WeatherForecast['condition'] => {
+  const s = (text ?? '').toLowerCase();
+  if (/storm|thunder/.test(s)) return 'storm';
+  if (/rain|shower|drizzle|wet/.test(s)) return 'rain';
+  if (/partly/.test(s)) return 'partly-cloudy';
+  if (/cloud|overcast/.test(s)) return 'cloudy';
+  return 'sunny';
+};
+
+const inferSeverity = (
+  title: string,
+  content: string | null,
+): Advisory['severity'] => {
+  const s = `${title} ${content ?? ''}`.toLowerCase();
+  if (/urgent|immediat|warning|disease|outbreak|pest|flood|drought|alert/.test(s))
+    return 'warning';
+  if (/apply|spray|harvest|plant|fertil|irrigat|action|before|now/.test(s))
+    return 'action';
+  return 'info';
+};
+
+const weekday = (date: string): string => {
+  const d = new Date(date);
+  return Number.isNaN(d.getTime())
+    ? date
+    : d.toLocaleDateString('en-US', { weekday: 'short' });
+};
+
+// --- localStorage offline cache (prices/weather) -----------------------------
+
+const CACHE_TTL_MS = 30 * 60 * 1000;
+const PRICES_CACHE = 'ojafarm.cache.prices';
+const WEATHER_CACHE = 'ojafarm.cache.weather';
+
+interface CacheEntry<T> {
+  ts: number;
+  data: T;
+}
+
+const readCacheEntry = <T>(key: string): CacheEntry<T> | null => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as CacheEntry<T>) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Cached value if it is younger than 30 minutes, else `null`. */
+const readFreshCache = <T>(key: string): T | null => {
+  const entry = readCacheEntry<T>(key);
+  return entry && Date.now() - entry.ts <= CACHE_TTL_MS ? entry.data : null;
+};
+
+/** Any cached value regardless of age — the offline fallback. */
+const readStaleCache = <T>(key: string): T | null =>
+  readCacheEntry<T>(key)?.data ?? null;
+
+const writeCache = <T>(key: string, data: T): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }));
+  } catch {
+    // Storage unavailable — caching is best-effort.
+  }
+};
+
+// --- Row → domain mappers ----------------------------------------------------
+
+const mapUser = (row: UserRow): User => ({
+  id: row.id,
+  name: row.name,
+  role: row.role as UserRole,
+  phone: row.phone ?? '',
+  region: toRegionId(row.location),
+  avatarInitials: initials(row.name),
+  status: row.status === 'inactive' ? 'inactive' : 'active',
+  lastActive: row.last_active ?? row.created_at ?? '',
+});
+
+const mapProduct = (row: ProductRow, supplier?: UserRow): Product => {
+  const category =
+    (row.category as ProductCategory | null) ??
+    guessCategory(row.name, row.description ?? '');
+  return {
+    id: row.id,
+    name: row.name,
+    category,
+    cropType: toCropType(row.crop_type),
+    description: row.description ?? '',
+    price: Number(row.price),
+    unit: row.unit ?? UNIT_BY_CATEGORY[category],
+    imageUrl: row.image_url ?? '',
+    region: toRegionId(row.location),
+    supplierId: row.supplier_id ?? '',
+    supplierName: supplier?.name ?? 'OjàFarm Supplier',
+    supplierRating: Number(row.rating) || 0,
+    supplierPhone: supplier?.phone ?? '',
+    listedAt: row.created_at ?? '',
+    inStock: row.in_stock ?? true,
+  };
+};
+
+const mapAdvisory = (row: AdvisoryRow): Advisory => ({
+  id: row.id,
+  cropType: toCropType(row.crop_type),
+  title: row.title,
+  window: row.window ?? '',
+  detail: row.content ?? '',
+  severity:
+    (row.severity as Advisory['severity'] | null) ??
+    inferSeverity(row.title, row.content),
+});
+
+const mapCooperative = (
+  row: GroupRow,
+  members: GroupMember[],
+): Cooperative => ({
+  id: row.id,
+  name: row.name,
+  cropFocus: toCropType(row.crop_focus),
+  region: toRegionId(row.location),
+  memberCount: members.length,
+  description: row.description ?? '',
+  members,
+  messages: [],
+});
+
+const mapInquiry = (row: SupplierInquiryRow): SupplierInquiry => ({
+  id: row.id,
+  buyerName: row.buyer_name,
+  productId: row.product_id ?? '',
+  productName: row.product_name,
+  message: row.message,
+  date: row.date,
+  phone: row.phone ?? '',
+});
+
+/** Collapse per-location commodity rows into one CommodityPrice per crop. */
+const aggregatePrices = (rows: PriceRow[]): CommodityPrice[] => {
+  const byCrop = new Map<string, Map<string, number[]>>();
+  for (const row of rows) {
+    const dates = byCrop.get(row.crop_type) ?? new Map<string, number[]>();
+    byCrop.set(row.crop_type, dates);
+    const list = dates.get(row.date) ?? [];
+    list.push(Number(row.price));
+    dates.set(row.date, list);
+  }
+
+  const result: CommodityPrice[] = [];
+  for (const [crop, dateMap] of byCrop) {
+    const dates = [...dateMap.keys()].sort((a, b) => b.localeCompare(a));
+    const mean = (d: string): number => {
+      const list = dateMap.get(d) ?? [];
+      return list.reduce((sum, n) => sum + n, 0) / (list.length || 1);
+    };
+    const latest = mean(dates[0]);
+    const previous = dates[1] ? mean(dates[1]) : latest;
+    const changePercent = previous
+      ? Math.round(((latest - previous) / previous) * 1000) / 10
+      : 0;
+    const cropType = toCropType(crop);
+    const meta = CROP_META.get(cropType);
+    result.push({
+      cropType,
+      label: meta?.label ?? cropLabel(cropType),
+      price: Math.round(latest * 100) / 100,
+      unit: meta?.unit ?? 'per kg',
+      changePercent,
+      updatedAt: dates[0],
+    });
+  }
+  return result.sort((a, b) => a.label.localeCompare(b.label));
+};
+
+const buildForecast = (
+  region: RegionId,
+  rows: WeatherRow[],
+): WeatherForecast => {
+  const latest = rows[0];
+  const daily = [...rows]
+    .slice(0, 5)
+    .reverse()
+    .map((r) => ({
+      day: weekday(r.date),
+      tempHighC: Math.round(Number(r.temperature) + 3),
+      tempLowC: Math.round(Number(r.temperature) - 4),
+      rainfallMm: Math.round(Number(r.rainfall)),
+      condition:
+        (r.condition as WeatherForecast['condition'] | null) ??
+        conditionFromText(r.forecast),
+    }));
+  return {
+    region,
+    regionLabel: regionLabelEn(region),
+    currentTempC: Math.round(Number(latest.temperature)),
+    condition:
+      (latest.condition as WeatherForecast['condition'] | null) ??
+      conditionFromText(latest.forecast),
+    humidityPercent:
+      latest.humidity != null
+        ? Math.round(Number(latest.humidity))
+        : Math.min(95, Math.round(55 + Number(latest.rainfall) * 3)),
+    updatedAt: latest.date,
+    daily,
+  };
+};
+
+const emptyForecast = (region: RegionId): WeatherForecast => ({
+  region,
+  regionLabel: regionLabelEn(region),
+  currentTempC: 0,
+  condition: 'sunny',
+  humidityPercent: 0,
+  updatedAt: '',
+  daily: [],
+});
+
+/** Fetch supplier profiles for a set of product `supplier_id`s in one query. */
+const fetchSuppliers = async (
+  ids: (string | null)[],
+): Promise<Map<string, UserRow>> => {
+  const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))];
+  if (unique.length === 0) return new Map();
+  const { data } = await supabase.from('users').select('*').in('id', unique);
+  return new Map(((data ?? []) as UserRow[]).map((u) => [u.id, u]));
+};
+
+class SupabaseApi implements AgroApi {
+  private toAuth(row: UserRow): AuthenticatedUser {
+    return {
+      id: row.id,
+      name: row.name,
+      role: row.role as UserRole,
+      phone: row.phone ?? '',
+      region: toRegionId(row.location),
+      avatarInitials: initials(row.name),
+    };
+  }
+
+  async login(payload: LoginPayload): Promise<AuthenticatedUser> {
+    debug('login', payload.role);
+    const key = phoneKey(payload.phone);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', payload.role);
+    if (error) fail(error, 502);
+
+    const match = ((data ?? []) as UserRow[]).find(
+      (u) => u.phone && phoneKey(u.phone) === key,
+    );
+    if (match) {
+      // A user with no `pin` column (un-migrated DB) is accepted on phone+role.
+      if (match.pin == null || match.pin === payload.pin) return this.toAuth(match);
+      const apiError: ApiError = {
+        status: 401,
+        message:
+          'Invalid phone, PIN, or role. Check your details or create an account.',
+      };
+      throw apiError;
+    }
+
+    // Fall back to the seeded demo credentials for offline/demo sign-in.
+    const demo = demoCredentials.find(
+      (c) =>
+        phoneKey(c.phone) === key &&
+        c.pin === payload.pin &&
+        c.role === payload.role,
+    );
+    if (demo) {
+      const profile = users.find((u) => u.role === payload.role);
+      return {
+        id: profile?.id ?? 'u0',
+        name: demo.name,
+        role: payload.role,
+        phone: payload.phone,
+        region: profile?.region ?? 'oyo',
+        avatarInitials: profile?.avatarInitials ?? 'OF',
+      };
+    }
+
+    const apiError: ApiError = {
+      status: 401,
+      message:
+        'Invalid phone, PIN, or role. Check your details or create an account.',
+    };
+    throw apiError;
+  }
+
+  async register(payload: RegisterPayload): Promise<AuthenticatedUser> {
+    debug('register', payload.role);
+    const key = phoneKey(payload.phone);
+    const { data: existing, error: lookupError } = await supabase
+      .from('users')
+      .select('id, phone');
+    if (lookupError) fail(lookupError, 502);
+
+    const taken = ((existing ?? []) as { phone: string | null }[]).some(
+      (u) => u.phone && phoneKey(u.phone) === key,
+    );
+    if (taken) {
+      const apiError: ApiError = {
+        status: 409,
+        message: 'An account with this phone number already exists.',
+      };
+      throw apiError;
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        name: payload.name,
+        role: payload.role,
+        location: regionToLocation(payload.region),
+        phone: payload.phone,
+        pin: payload.pin,
+        status: 'active',
+        email: `${normalizePhone(payload.phone)}@ojafarm.local`,
+      })
+      .select()
+      .single();
+    if (error) fail(error);
+    return this.toAuth(data as UserRow);
+  }
+
+  async getCommodityPrices(): Promise<CommodityPrice[]> {
+    debug('getCommodityPrices');
+    const fresh = readFreshCache<CommodityPrice[]>(PRICES_CACHE);
+    if (fresh) return fresh;
+
+    const { data, error } = await supabase
+      .from('commodity_prices')
+      .select('crop_type, location, price, date')
+      .order('date', { ascending: false })
+      .limit(500);
+    if (error) {
+      const stale = readStaleCache<CommodityPrice[]>(PRICES_CACHE);
+      if (stale) return stale;
+      return fail(error, 502);
+    }
+
+    const result = aggregatePrices((data ?? []) as PriceRow[]);
+    writeCache(PRICES_CACHE, result);
+    return result;
+  }
+
+  async getWeather(region: RegionId): Promise<WeatherForecast> {
+    debug('getWeather', region);
+    const key = `${WEATHER_CACHE}.${region}`;
+    const fresh = readFreshCache<WeatherForecast>(key);
+    if (fresh) return fresh;
+
+    const { data, error } = await supabase
+      .from('weather')
+      .select('*')
+      .eq('location', regionToLocation(region))
+      .order('date', { ascending: false })
+      .limit(7);
+    if (error) {
+      const stale = readStaleCache<WeatherForecast>(key);
+      if (stale) return stale;
+      return fail(error, 502);
+    }
+
+    const rows = (data ?? []) as WeatherRow[];
+    const result = rows.length
+      ? buildForecast(region, rows)
+      : emptyForecast(region);
+    writeCache(key, result);
+    return result;
+  }
+
+  async getAdvisories(): Promise<Advisory[]> {
+    debug('getAdvisories');
+    const { data, error } = await supabase
+      .from('advisories')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) fail(error, 502);
+    return ((data ?? []) as AdvisoryRow[]).map(mapAdvisory);
+  }
+
+  async createAdvisory(input: AdvisoryInput): Promise<Advisory> {
+    debug('createAdvisory', input.title);
+    const { data, error } = await supabase
+      .from('advisories')
+      .insert({
+        crop_type: toDbCrop(input.cropType),
+        title: input.title,
+        content: input.detail,
+        severity: input.severity,
+        window: input.window,
+      })
+      .select()
+      .single();
+    if (error) fail(error);
+    return mapAdvisory(data as AdvisoryRow);
+  }
+
+  async updateAdvisory(id: string, input: AdvisoryInput): Promise<Advisory> {
+    debug('updateAdvisory', id);
+    const { data, error } = await supabase
+      .from('advisories')
+      .update({
+        crop_type: toDbCrop(input.cropType),
+        title: input.title,
+        content: input.detail,
+        severity: input.severity,
+        window: input.window,
+      })
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+    if (error) fail(error);
+    if (!data) notFound('Advisory not found.');
+    return mapAdvisory(data as AdvisoryRow);
+  }
+
+  async deleteAdvisory(id: string): Promise<void> {
+    debug('deleteAdvisory', id);
+    const { error } = await supabase.from('advisories').delete().eq('id', id);
+    if (error) fail(error);
+  }
+
+  async getProducts(query: ProductQuery = {}): Promise<Paginated<Product>> {
+    debug('getProducts', query);
+    const page = Math.max(1, query.page ?? 1);
+    const pageSize = Math.max(1, query.pageSize ?? 1000);
+    const start = (page - 1) * pageSize;
+
+    let builder = supabase.from('products').select('*', { count: 'exact' });
+    if (query.cropType && query.cropType !== 'all') {
+      builder = builder.eq('crop_type', toDbCrop(query.cropType));
+    }
+    if (query.region && query.region !== 'all') {
+      builder = builder.eq('location', regionToLocation(query.region as RegionId));
+    }
+    if (typeof query.minPrice === 'number') {
+      builder = builder.gte('price', query.minPrice);
+    }
+    if (typeof query.maxPrice === 'number') {
+      builder = builder.lte('price', query.maxPrice);
+    }
+    if (query.search) {
+      const term = query.search.replace(/[%,]/g, ' ').trim();
+      builder = builder.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
+    }
+
+    switch (query.sort) {
+      case 'price-asc':
+        builder = builder.order('price', { ascending: true });
+        break;
+      case 'price-desc':
+        builder = builder.order('price', { ascending: false });
+        break;
+      case 'rating':
+        builder = builder.order('rating', { ascending: false, nullsFirst: false });
+        break;
+      case 'newest':
+      default:
+        builder = builder.order('created_at', { ascending: false });
+    }
+
+    const { data, error, count } = await builder.range(start, start + pageSize - 1);
+    if (error) fail(error, 502);
+
+    const rows = (data ?? []) as ProductRow[];
+    const supplierMap = await fetchSuppliers(rows.map((r) => r.supplier_id));
+    const items = rows.map((r) => mapProduct(r, supplierMap.get(r.supplier_id ?? '')));
+    const total = count ?? items.length;
+    return {
+      items,
+      total,
+      page,
+      pageSize,
+      hasMore: start + rows.length < total,
+    };
+  }
+
+  async getProduct(id: string): Promise<ProductDetail> {
+    debug('getProduct', id);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) fail(error);
+    if (!data) notFound('Product not found.');
+
+    const row = data as ProductRow;
+    const supplierMap = await fetchSuppliers([row.supplier_id]);
+    const base = mapProduct(row, supplierMap.get(row.supplier_id ?? ''));
+
+    const { data: priceData } = await supabase
+      .from('commodity_prices')
+      .select('date, price')
+      .eq('crop_type', row.crop_type)
+      .order('date', { ascending: true })
+      .limit(60);
+    const priceHistory = ((priceData ?? []) as { date: string; price: number }[]).map(
+      (p) => ({ date: p.date, price: Number(p.price) }),
+    );
+
+    return { ...base, longDescription: base.description, priceHistory, reviews: [] };
+  }
+
+  private async membersByGroup(): Promise<Map<string, GroupMember[]>> {
+    const { data, error } = await supabase
+      .from('group_members')
+      .select('group_id, role, users(*)');
+    if (error) fail(error, 502);
+
+    const map = new Map<string, GroupMember[]>();
+    for (const row of (data ?? []) as unknown as {
+      group_id: string;
+      role: string | null;
+      users: UserRow | null;
+    }[]) {
+      const u = row.users;
+      if (!u) continue;
+      const list = map.get(row.group_id) ?? [];
+      list.push({ id: u.id, name: u.name, role: row.role ?? 'Member', phone: u.phone ?? '' });
+      map.set(row.group_id, list);
+    }
+    return map;
+  }
+
+  async getCooperatives(): Promise<Cooperative[]> {
+    debug('getCooperatives');
+    const [groupsRes, members] = await Promise.all([
+      supabase.from('groups').select('*').order('created_at', { ascending: false }),
+      this.membersByGroup(),
+    ]);
+    if (groupsRes.error) fail(groupsRes.error, 502);
+    return ((groupsRes.data ?? []) as GroupRow[]).map((g) =>
+      mapCooperative(g, members.get(g.id) ?? []),
+    );
+  }
+
+  async getCooperative(id: string): Promise<Cooperative> {
+    debug('getCooperative', id);
+    const { data, error } = await supabase
+      .from('groups')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) fail(error);
+    if (!data) notFound('Group not found.');
+
+    const { data: memberData } = await supabase
+      .from('group_members')
+      .select('role, users(*)')
+      .eq('group_id', id);
+    const members = ((memberData ?? []) as unknown as {
+      role: string | null;
+      users: UserRow | null;
+    }[])
+      .filter((m): m is { role: string | null; users: UserRow } => Boolean(m.users))
+      .map((m) => ({
+        id: m.users.id,
+        name: m.users.name,
+        role: m.role ?? 'Member',
+        phone: m.users.phone ?? '',
+      }));
+
+    return mapCooperative(data as GroupRow, members);
+  }
+
+  async createCooperative(input: NewCooperativeInput): Promise<Cooperative> {
+    debug('createCooperative', input.name);
+    const { data, error } = await supabase
+      .from('groups')
+      .insert({
+        name: input.name,
+        crop_focus: toDbCrop(input.cropFocus),
+        location: regionToLocation(input.region),
+        description: input.description,
+      })
+      .select()
+      .single();
+    if (error) fail(error);
+    const group = data as GroupRow;
+
+    // Best-effort: link the creator as Chairperson. A demo user has no real
+    // row, so a foreign key failure is tolerated — the group is still created.
+    const { error: memberError } = await supabase
+      .from('group_members')
+      .insert({ group_id: group.id, user_id: input.creator.id, role: 'Chairperson' });
+    if (memberError) debug('createCooperative: member link skipped', memberError.message);
+
+    return {
+      id: group.id,
+      name: group.name,
+      cropFocus: input.cropFocus,
+      region: input.region,
+      memberCount: 1,
+      description: input.description,
+      members: [
+        {
+          id: input.creator.id,
+          name: input.creator.name,
+          role: 'Chairperson',
+          phone: input.creator.phone,
+        },
+      ],
+      messages: [],
+    };
+  }
+
+  async getUsers(): Promise<User[]> {
+    debug('getUsers');
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) fail(error, 502);
+    return ((data ?? []) as UserRow[]).map(mapUser);
+  }
+
+  async setUserStatus(id: string, status: User['status']): Promise<User> {
+    debug('setUserStatus', id, status);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) fail(error);
+    if (!data) notFound('User not found.');
+
+    const row = data as UserRow;
+    if (row.role === 'admin') {
+      const apiError: ApiError = {
+        status: 403,
+        message: 'Admin accounts cannot be deactivated.',
+      };
+      throw apiError;
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from('users')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+    if (updateError) fail(updateError);
+    return mapUser(updated as UserRow);
+  }
+
+  async getSupplierInquiries(): Promise<SupplierInquiry[]> {
+    debug('getSupplierInquiries');
+    const { data, error } = await supabase
+      .from('supplier_inquiries')
+      .select('*')
+      .order('date', { ascending: false });
+    if (error) fail(error, 502);
+    return ((data ?? []) as SupplierInquiryRow[]).map(mapInquiry);
+  }
+
+  async getSupplierProfile(name: string): Promise<Supplier | null> {
+    debug('getSupplierProfile', name);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'supplier')
+      .eq('name', name)
+      .maybeSingle();
+    if (error) fail(error);
+    if (!data) return null;
+
+    const user = data as UserRow;
+    const { data: productData } = await supabase
+      .from('products')
+      .select('rating')
+      .eq('supplier_id', user.id);
+    const ratings = ((productData ?? []) as { rating: number | null }[])
+      .map((p) => Number(p.rating))
+      .filter((n) => n > 0);
+    const rating = ratings.length
+      ? ratings.reduce((sum, n) => sum + n, 0) / ratings.length
+      : 4.5;
+
+    return {
+      id: user.id,
+      name: user.name,
+      phone: user.phone ?? '',
+      region: toRegionId(user.location),
+      rating: Math.round(rating * 10) / 10,
+      reviewCount: ratings.length,
+      verified: true,
+      joinedYear: new Date(user.created_at).getFullYear() || new Date().getFullYear(),
+    };
+  }
+
+  async getDashboardSummary(): Promise<DashboardSummary> {
+    debug('getDashboardSummary');
+    const [productsRes, groupsRes, advisoryList, prices] = await Promise.all([
+      supabase.from('products').select('*', { count: 'exact', head: true }),
+      supabase.from('groups').select('*', { count: 'exact', head: true }),
+      this.getAdvisories(),
+      this.getCommodityPrices(),
+    ]);
+
+    const fallback: CommodityPrice = {
+      cropType: 'maize',
+      label: cropLabel('maize'),
+      price: 0,
+      unit: 'per kg',
+      changePercent: 0,
+      updatedAt: '',
+    };
+    const topMover = prices.reduce(
+      (top, price) =>
+        Math.abs(price.changePercent) > Math.abs(top.changePercent) ? price : top,
+      prices[0] ?? fallback,
+    );
+
+    return {
+      marketListings: productsRes.count ?? 0,
+      cooperativeCount: groupsRes.count ?? 0,
+      actionAdvisories: advisoryList.filter((a) => a.severity !== 'info').length,
+      topMover,
+    };
+  }
+
+  async getPlatformAnalytics(): Promise<PlatformAnalytics> {
+    debug('getPlatformAnalytics');
+    const [usersRes, productsRes, groupsRes, membersRes] = await Promise.all([
+      supabase.from('users').select('*'),
+      supabase.from('products').select('*'),
+      supabase.from('groups').select('*', { count: 'exact', head: true }),
+      supabase.from('group_members').select('*', { count: 'exact', head: true }),
+    ]);
+
+    const userRows = ((usersRes.data ?? []) as UserRow[]).map(mapUser);
+    const productRows = (productsRes.data ?? []) as ProductRow[];
+
+    const listingsByCategory = productCategories
+      .map((c) => ({
+        category: c.id,
+        label: c.label,
+        count: productRows.filter(
+          (p) => guessCategory(p.name, p.description ?? '') === c.id,
+        ).length,
+      }))
+      .filter((c) => c.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    const usersByRegion = regions
+      .map((r) => ({
+        region: r.id,
+        label: r.label,
+        count: userRows.filter((u) => u.region === r.id).length,
+      }))
+      .filter((r) => r.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    return {
+      totalUsers: userRows.length,
+      activeUsers: userRows.filter((u) => u.status === 'active').length,
+      totalListings: productRows.length,
+      cooperativeCount: groupsRes.count ?? 0,
+      cooperativeMembers: membersRes.count ?? 0,
+      listingsByCategory,
+      usersByRegion,
+    };
+  }
+}
+
+const selectBackend = (): AgroApi => {
+  if (env.useMockApi) return new MockApi();
+  if (supabaseConfigured) return new SupabaseApi();
+  return new HttpApi();
+};
+
+export const api: AgroApi = selectBackend();
 
 export const isApiError = (value: unknown): value is ApiError =>
   typeof value === 'object' &&
