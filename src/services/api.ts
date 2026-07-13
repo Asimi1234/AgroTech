@@ -971,31 +971,34 @@ const buildForecast = (
   region: RegionId,
   rows: WeatherRow[],
 ): WeatherForecast => {
-  const latest = rows[0];
-  const daily = [...rows]
+  // `rows` arrive newest-first; keep the 5 most recent and show them oldest→
+  // newest. "Current conditions" come from the day nearest now (the earliest of
+  // that window), not the farthest-out forecast day.
+  const window = [...rows]
     .slice(0, 5)
-    .reverse()
-    .map((r) => ({
-      day: weekday(r.date),
-      tempHighC: Math.round(Number(r.temperature) + 3),
-      tempLowC: Math.round(Number(r.temperature) - 4),
-      rainfallMm: Math.round(Number(r.rainfall)),
-      condition:
-        (r.condition as WeatherForecast['condition'] | null) ??
-        conditionFromText(r.forecast),
-    }));
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  const current = window[0];
+  const daily = window.map((r) => ({
+    day: weekday(r.date),
+    tempHighC: Math.round(Number(r.temperature) + 3),
+    tempLowC: Math.round(Number(r.temperature) - 4),
+    rainfallMm: Math.round(Number(r.rainfall)),
+    condition:
+      (r.condition as WeatherForecast['condition'] | null) ??
+      conditionFromText(r.forecast),
+  }));
   return {
     region,
     regionLabel: regionLabelEn(region),
-    currentTempC: Math.round(Number(latest.temperature)),
+    currentTempC: Math.round(Number(current.temperature)),
     condition:
-      (latest.condition as WeatherForecast['condition'] | null) ??
-      conditionFromText(latest.forecast),
+      (current.condition as WeatherForecast['condition'] | null) ??
+      conditionFromText(current.forecast),
     humidityPercent:
-      latest.humidity != null
-        ? Math.round(Number(latest.humidity))
-        : Math.min(95, Math.round(55 + Number(latest.rainfall) * 3)),
-    updatedAt: latest.date,
+      current.humidity != null
+        ? Math.round(Number(current.humidity))
+        : Math.min(95, Math.round(55 + Number(current.rainfall) * 3)),
+    updatedAt: current.date,
     daily,
   };
 };
