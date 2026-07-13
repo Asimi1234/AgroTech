@@ -33,6 +33,7 @@ import type {
   Product,
   ProductCategory,
   ProductDetail,
+  ProductInput,
   RegionId,
   Supplier,
   SupplierInquiry,
@@ -51,6 +52,7 @@ export type {
   Cooperative,
   Product,
   ProductDetail,
+  ProductInput,
   Supplier,
   User,
   WeatherForecast,
@@ -140,6 +142,12 @@ export interface AgroApi {
   deleteAdvisory(id: string): Promise<void>;
   getProducts(query?: ProductQuery): Promise<Paginated<Product>>;
   getProduct(id: string): Promise<ProductDetail>;
+  /** Create a listing owned by the current supplier. */
+  createProduct(input: ProductInput): Promise<Product>;
+  /** Update a listing (RLS scopes to the owning supplier or an admin). */
+  updateProduct(id: string, input: ProductInput): Promise<Product>;
+  /** Delete a listing (RLS scopes to the owning supplier or an admin). */
+  deleteProduct(id: string): Promise<void>;
   getCooperatives(): Promise<Cooperative[]>;
   getCooperative(id: string): Promise<Cooperative>;
   createCooperative(input: NewCooperativeInput): Promise<Cooperative>;
@@ -162,8 +170,11 @@ const clone = <T>(value: T): T =>
 
 const normalizePhone = (phone: string): string => phone.replace(/\D/g, '');
 
-const filterAndSortProducts = (query: ProductQuery = {}): Product[] => {
-  let result = [...products];
+const filterAndSortProducts = (
+  query: ProductQuery = {},
+  source: Product[] = products,
+): Product[] => {
+  let result = [...source];
 
   if (query.cropType && query.cropType !== 'all') {
     result = result.filter((p) => p.cropType === query.cropType);
@@ -230,6 +241,17 @@ class MockApi implements AgroApi {
   /** Mutable commodity price list so admin edits/additions persist in-session. */
   private prices: CommodityPrice[] = clone(commodityPrices);
 
+  /** Mutable product list so supplier listing edits persist within a session. */
+  private productList: Product[] = clone(products);
+  private productSeq = products.length;
+
+  /**
+   * The last authenticated user — the mock has no server session, so writes that
+   * are "owned by the current user" (e.g. new listings) read their identity here.
+   * The real backend uses `auth.uid()`.
+   */
+  private currentUser: AuthenticatedUser | null = null;
+
   private async respond<T>(value: T, latencyOverride?: number): Promise<T> {
     await delay(latencyOverride ?? this.latency);
     return clone(value);
@@ -250,26 +272,26 @@ class MockApi implements AgroApi {
         users.find(
           (u) => normalizePhone(u.phone) === phone && u.role === payload.role,
         ) ?? users.find((u) => u.role === payload.role);
-      return {
+      return (this.currentUser = {
         id: profile?.id ?? 'u0',
         name: profile?.name ?? demo.name,
         role: demo.role,
         phone: profile?.phone ?? payload.phone,
         region: profile?.region ?? 'oyo',
         avatarInitials: profile?.avatarInitials ?? 'AG',
-      };
+      });
     }
 
     const account = findAccount(payload.phone, payload.role);
     if (account && account.pin === payload.pin) {
-      return {
+      return (this.currentUser = {
         id: account.id,
         name: account.name,
         role: account.role,
         phone: account.phone,
         region: account.region,
         avatarInitials: account.avatarInitials,
-      };
+      });
     }
 
     const error: ApiError = {
@@ -303,18 +325,20 @@ class MockApi implements AgroApi {
       interests: payload.interests,
     });
 
-    return {
+    return (this.currentUser = {
       id: account.id,
       name: account.name,
       role: account.role,
       phone: account.phone,
       region: account.region,
       avatarInitials: account.avatarInitials,
-    };
+    });
   }
 
   // Mock/HTTP sessions live in the persisted client store — no server session.
-  async logout(): Promise<void> {}
+  async logout(): Promise<void> {
+    this.currentUser = null;
+  }
   async restoreSession(): Promise<AuthenticatedUser | null> {
     return null;
   }
@@ -390,7 +414,7 @@ class MockApi implements AgroApi {
   }
 
   getProducts(query: ProductQuery = {}): Promise<Paginated<Product>> {
-    const all = filterAndSortProducts(query);
+    const all = filterAndSortProducts(query, this.productList);
     const page = Math.max(1, query.page ?? 1);
     const pageSize = Math.max(1, query.pageSize ?? (all.length || 1));
     const start = (page - 1) * pageSize;
@@ -405,12 +429,61 @@ class MockApi implements AgroApi {
   }
 
   async getProduct(id: string): Promise<ProductDetail> {
-    const product = products.find((p) => p.id === id);
+    const product = this.productList.find((p) => p.id === id);
     if (!product) {
       const error: ApiError = { status: 404, message: 'Product not found.' };
       throw error;
     }
     return this.respond(buildProductDetail(product));
+  }
+
+  private productFromInput(id: string, input: ProductInput): Product {
+    return {
+      id,
+      name: input.name,
+      category: input.category,
+      cropType: input.cropType,
+      description: input.description,
+      price: input.price,
+      unit: input.unit,
+      imageUrl: '',
+      region: input.region,
+      supplierId: this.currentUser?.id ?? '',
+      supplierName: this.currentUser?.name ?? 'OjàFarm Supplier',
+      supplierRating: 0,
+      supplierPhone: this.currentUser?.phone ?? '',
+      listedAt: today(),
+      inStock: input.inStock,
+    };
+  }
+
+  async createProduct(input: ProductInput): Promise<Product> {
+    const product = this.productFromInput(`p${(this.productSeq += 1)}`, input);
+    this.productList = [product, ...this.productList];
+    return this.respond(product);
+  }
+
+  async updateProduct(id: string, input: ProductInput): Promise<Product> {
+    const existing = this.productList.find((p) => p.id === id);
+    if (!existing) notFound('Product not found.');
+    const updated: Product = {
+      ...existing!,
+      name: input.name,
+      category: input.category,
+      cropType: input.cropType,
+      description: input.description,
+      price: input.price,
+      unit: input.unit,
+      region: input.region,
+      inStock: input.inStock,
+    };
+    this.productList = this.productList.map((p) => (p.id === id ? updated : p));
+    return this.respond(updated);
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    this.productList = this.productList.filter((p) => p.id !== id);
+    await this.respond(null);
   }
 
   getCooperatives(): Promise<Cooperative[]> {
@@ -627,6 +700,24 @@ class HttpApi implements AgroApi {
 
   getProduct(id: string): Promise<ProductDetail> {
     return this.request(`/products/${id}`);
+  }
+
+  createProduct(input: ProductInput): Promise<Product> {
+    return this.request('/products', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  updateProduct(id: string, input: ProductInput): Promise<Product> {
+    return this.request(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    await this.request(`/products/${id}`, { method: 'DELETE' });
   }
 
   getCooperatives(): Promise<Cooperative[]> {
@@ -1639,6 +1730,56 @@ class SupabaseApi implements AgroApi {
     );
 
     return { ...base, longDescription: base.description, priceHistory, reviews: [] };
+  }
+
+  private productWrite(input: ProductInput) {
+    return {
+      name: input.name.trim(),
+      crop_type: toDbCrop(input.cropType),
+      price: input.price,
+      location: regionToLocation(input.region),
+      description: input.description.trim(),
+      category: input.category,
+      unit: input.unit.trim(),
+      in_stock: input.inStock,
+    };
+  }
+
+  private async withSupplier(row: ProductRow): Promise<Product> {
+    const supplierMap = await fetchSuppliers([row.supplier_id]);
+    return mapProduct(row, supplierMap.get(row.supplier_id ?? ''));
+  }
+
+  async createProduct(input: ProductInput): Promise<Product> {
+    debug('createProduct', input.name);
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth.user?.id;
+    if (!uid) fail({ message: 'You must be signed in to create a listing.' }, 401);
+    const { data, error } = await supabase
+      .from('products')
+      .insert({ supplier_id: uid, ...this.productWrite(input) })
+      .select('*')
+      .single();
+    if (error) fail(error);
+    return this.withSupplier(data as ProductRow);
+  }
+
+  async updateProduct(id: string, input: ProductInput): Promise<Product> {
+    debug('updateProduct', id);
+    const { data, error } = await supabase
+      .from('products')
+      .update(this.productWrite(input))
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) fail(error);
+    return this.withSupplier(data as ProductRow);
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    debug('deleteProduct', id);
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) fail(error);
   }
 
   private async membersByGroup(): Promise<Map<string, GroupMember[]>> {

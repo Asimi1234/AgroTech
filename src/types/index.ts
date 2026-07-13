@@ -73,6 +73,18 @@ export type ProductCategory =
   | 'crop-protection'
   | 'produce';
 
+/** Editable fields when a supplier creates or updates a listing. */
+export interface ProductInput {
+  name: string;
+  category: ProductCategory;
+  cropType: CropType;
+  description: string;
+  price: number;
+  unit: string;
+  region: RegionId;
+  inStock: boolean;
+}
+
 export interface Supplier {
   id: string;
   name: string;
