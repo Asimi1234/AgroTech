@@ -35,6 +35,9 @@ export const useAuthStore = create<AuthState>()(
               ? { user, isAuthenticated: true }
               : { user: null, isAuthenticated: false },
           );
+        } catch {
+          // Never let a bootstrap failure wedge the app on the loader.
+          set({ user: null, isAuthenticated: false });
         } finally {
           set({ hydrated: true });
         }

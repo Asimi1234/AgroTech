@@ -764,9 +764,11 @@ const phoneKey = (phone: string): string => normalizePhone(phone).slice(-10);
 
 // Supabase Auth is email/password; the app's UX is phone + 4-digit PIN. Map a
 // phone to a deterministic synthetic email and derive a >=6-char password from
-// the PIN. Demo-grade: real phone auth would use an SMS OTP provider.
+// the PIN. `phoneKey` (last 10 digits) is used so the same number typed in any
+// valid format ("08031234567", "+234 803 123 4567") resolves to one account.
+// Demo-grade: real phone auth would use an SMS OTP provider.
 const phoneToEmail = (phone: string): string =>
-  `${normalizePhone(phone)}@ojafarm.local`;
+  `${phoneKey(phone)}@ojafarm.local`;
 const pinToPassword = (pin: string): string => `ojafarm-${pin}`;
 
 const guessCategory = (name: string, description: string): ProductCategory => {
@@ -1122,6 +1124,18 @@ class SupabaseApi implements AgroApi {
     debug('register', payload.role);
     const email = phoneToEmail(payload.phone);
     const password = pinToPassword(payload.pin);
+    const conflict = (): never => {
+      const apiError: ApiError = {
+        status: 409,
+        message: 'An account with this phone number already exists.',
+      };
+      throw apiError;
+    };
+
+    // Demo phones are reserved for the built-in demo logins.
+    if (demoCredentials.some((c) => phoneKey(c.phone) === phoneKey(payload.phone))) {
+      conflict();
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -1130,21 +1144,32 @@ class SupabaseApi implements AgroApi {
         data: { name: payload.name, role: payload.role, region: payload.region },
       },
     });
+
+    let uid = data?.user?.id;
+    let hasSession = Boolean(data?.session);
+
     if (error) {
-      const conflict = /already registered|already exists|User already/i.test(
+      const exists = /already registered|already exists|User already/i.test(
         error.message,
       );
-      const apiError: ApiError = {
-        status: conflict ? 409 : 400,
-        message: conflict
-          ? 'An account with this phone number already exists.'
-          : error.message,
-      };
-      throw apiError;
+      if (!exists) {
+        const apiError: ApiError = { status: 400, message: error.message };
+        throw apiError;
+      }
+      // The Auth account already exists: either a real duplicate, or an orphan
+      // left by an earlier signUp whose profile insert failed. Sign in to tell
+      // them apart — and, if it's an orphan, to heal it below.
+      const signIn = await supabase.auth.signInWithPassword({ email, password });
+      if (signIn.error || !signIn.data.user) conflict();
+      uid = signIn.data.user!.id;
+      hasSession = true;
+      if (await this.profileFor(uid)) {
+        await supabase.auth.signOut();
+        conflict();
+      }
     }
 
-    const uid = data.user?.id;
-    if (!uid || !data.session) {
+    if (!uid || !hasSession) {
       // No session means Supabase requires email confirmation — incompatible
       // with synthetic phone emails. Disable "Confirm email" in Auth settings.
       const apiError: ApiError = {
@@ -1157,18 +1182,25 @@ class SupabaseApi implements AgroApi {
 
     const { data: profile, error: profileError } = await supabase
       .from('users')
-      .insert({
-        id: uid,
-        name: payload.name,
-        role: payload.role,
-        location: regionToLocation(payload.region),
-        phone: payload.phone,
-        status: 'active',
-        email,
-      })
+      .upsert(
+        {
+          id: uid,
+          name: payload.name,
+          role: payload.role,
+          location: regionToLocation(payload.region),
+          phone: payload.phone,
+          status: 'active',
+          email,
+        },
+        { onConflict: 'id' },
+      )
       .select()
       .single();
-    if (profileError) fail(profileError);
+    if (profileError) {
+      // Don't leave a half-authenticated session with no profile row.
+      await supabase.auth.signOut();
+      fail(profileError);
+    }
     return this.toAuth(profile as UserRow);
   }
 
@@ -1181,8 +1213,31 @@ class SupabaseApi implements AgroApi {
     const { data } = await supabase.auth.getSession();
     const authUser = data.session?.user;
     if (!authUser) return null;
-    const profile = await this.profileFor(authUser.id);
-    return profile ? this.toAuth(profile) : null;
+
+    try {
+      const profile = await this.profileFor(authUser.id);
+      if (profile) return this.toAuth(profile);
+    } catch {
+      // Profile fetch failed (e.g. transient network) — fall through to the
+      // JWT metadata so a valid session isn't bounced to the logged-out view.
+    }
+
+    const md = (authUser.user_metadata ?? {}) as {
+      name?: string;
+      role?: string;
+      region?: string;
+    };
+    if (md.role) {
+      return {
+        id: authUser.id,
+        name: md.name ?? '',
+        role: md.role as UserRole,
+        phone: '',
+        region: (md.region as RegionId) ?? 'oyo',
+        avatarInitials: initials(md.name ?? 'OjàFarm'),
+      };
+    }
+    return null;
   }
 
   async getCommodityPrices(): Promise<CommodityPrice[]> {
@@ -1224,7 +1279,17 @@ class SupabaseApi implements AgroApi {
       return fail(error, 502);
     }
 
-    const rows = (data ?? []) as WeatherRow[];
+    let rows = (data ?? []) as WeatherRow[];
+    if (!rows.length) {
+      // No rows for this region — fall back to the most recent weather from
+      // any location so the panel shows a real forecast rather than zeroes.
+      const { data: anyData } = await supabase
+        .from('weather')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(7);
+      rows = (anyData ?? []) as WeatherRow[];
+    }
     const result = rows.length
       ? buildForecast(region, rows)
       : emptyForecast(region);
@@ -1304,8 +1369,16 @@ class SupabaseApi implements AgroApi {
       builder = builder.lte('price', query.maxPrice);
     }
     if (query.search) {
-      const term = query.search.replace(/[%,]/g, ' ').trim();
-      builder = builder.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
+      // Strip characters that are meaningful in a PostgREST or() filter tree
+      // (parentheses, commas, quotes, wildcards, backslash) so a search like
+      // "NPK (15-15-15)" can't break the filter parse into a 400.
+      const term = query.search
+        .replace(/[(),."*%\\]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (term) {
+        builder = builder.or(`name.ilike.%${term}%,description.ilike.%${term}%`);
+      }
     }
 
     switch (query.sort) {
@@ -1525,6 +1598,7 @@ class SupabaseApi implements AgroApi {
       .select('*')
       .eq('role', 'supplier')
       .eq('name', name)
+      .limit(1)
       .maybeSingle();
     if (error) fail(error);
     if (!data) return null;
@@ -1556,7 +1630,11 @@ class SupabaseApi implements AgroApi {
   async getDashboardSummary(): Promise<DashboardSummary> {
     debug('getDashboardSummary');
     const [productsRes, groupsRes, advisoryList, prices] = await Promise.all([
-      supabase.from('products').select('*', { count: 'exact', head: true }),
+      // Market listings = products currently in stock (mirrors the mock).
+      supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('in_stock', true),
       supabase.from('groups').select('*', { count: 'exact', head: true }),
       this.getAdvisories(),
       this.getCommodityPrices(),
@@ -1601,7 +1679,9 @@ class SupabaseApi implements AgroApi {
         category: c.id,
         label: c.label,
         count: productRows.filter(
-          (p) => guessCategory(p.name, p.description ?? '') === c.id,
+          (p) =>
+            ((p.category as ProductCategory | null) ??
+              guessCategory(p.name, p.description ?? '')) === c.id,
         ).length,
       }))
       .filter((c) => c.count > 0)

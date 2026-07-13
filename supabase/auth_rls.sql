@@ -33,6 +33,9 @@ grant usage on schema public to anon, authenticated;
 grant select on all tables in schema public to anon, authenticated;
 grant insert, update, delete on all tables in schema public to authenticated;
 grant insert on public.supplier_inquiries to anon;  -- buyer inquiries may be anonymous
+-- The user directory holds contact info (email/phone); require a login to read
+-- it so the shipped anon key can't dump PII unauthenticated.
+revoke select on public.users from anon;
 
 -- Enable RLS everywhere.
 alter table public.users             enable row level security;
@@ -44,15 +47,46 @@ alter table public.groups            enable row level security;
 alter table public.group_members     enable row level security;
 alter table public.supplier_inquiries enable row level security;
 
--- USERS: directory is readable; you may write your own row; admins write any.
+-- USERS: directory readable only to signed-in users; you may write your own
+-- row; admins write any. Role changes are further gated by the trigger below.
 drop policy if exists users_read       on public.users;
 drop policy if exists users_insert_self on public.users;
 drop policy if exists users_update_own on public.users;
-create policy users_read        on public.users for select using (true);
+create policy users_read        on public.users for select to authenticated using (true);
 create policy users_insert_self on public.users for insert with check (id = auth.uid());
 create policy users_update_own  on public.users for update
   using (id = auth.uid() or public.is_admin())
   with check (id = auth.uid() or public.is_admin());
+
+-- Prevent privilege escalation: the row-ownership check above would otherwise
+-- let a user set their own role to 'admin'. Only an existing admin (or the
+-- seeded demo-admin identity, matched on its non-spoofable JWT email) may
+-- create or assign the admin role, and non-admins may not change role at all.
+create or replace function public.enforce_role_guard()
+  returns trigger
+  language plpgsql
+  security definer
+  set search_path = public
+as $$
+begin
+  if new.role = 'admin'
+     and not public.is_admin()
+     and coalesce(auth.jwt() ->> 'email', '') <> '7000000000@ojafarm.local' then
+    raise exception 'not authorized to assign admin role';
+  end if;
+  if tg_op = 'UPDATE'
+     and new.role is distinct from old.role
+     and not public.is_admin() then
+    raise exception 'not authorized to change role';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists users_role_guard on public.users;
+create trigger users_role_guard
+  before insert or update on public.users
+  for each row execute function public.enforce_role_guard();
 
 -- PRODUCTS: public catalog; a supplier manages their own listings; admins any.
 drop policy if exists products_read  on public.products;
