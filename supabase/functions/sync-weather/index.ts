@@ -87,16 +87,24 @@ interface OpenMeteo {
   };
 }
 
-async function rowsForRegion(r: (typeof REGIONS)[number]) {
+// Open-Meteo accepts many coordinates in one request and returns an array in the
+// same order — so we make a single call for all regions (avoids rate limits).
+async function fetchAll(): Promise<OpenMeteo[]> {
+  const lats = REGIONS.map((r) => r.lat).join(',');
+  const lons = REGIONS.map((r) => r.lon).join(',');
   const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${r.lat}&longitude=${r.lon}` +
+    `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}` +
     `&current=temperature_2m,relative_humidity_2m,weather_code` +
     `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code` +
     `&timezone=Africa%2FLagos&forecast_days=5`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Open-Meteo ${res.status} for ${r.location}`);
-  const data = (await res.json()) as OpenMeteo;
+  if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
+  const data = await res.json();
+  // A single coordinate returns an object; many return an array — normalize.
+  return Array.isArray(data) ? data : [data];
+}
 
+function buildRows(location: string, data: OpenMeteo) {
   return data.daily.time.map((date, i) => {
     const isToday = i === 0;
     const rainfall = Math.round(data.daily.precipitation_sum[i] ?? 0);
@@ -112,7 +120,7 @@ async function rowsForRegion(r: (typeof REGIONS)[number]) {
       ? Math.round(data.current.relative_humidity_2m)
       : Math.min(95, Math.round(55 + rainfall * 3));
     return {
-      location: r.location,
+      location,
       date,
       temperature,
       rainfall,
@@ -136,9 +144,12 @@ Deno.serve(async (req) => {
   );
 
   const today = new Date().toISOString().slice(0, 10);
+  const forecasts = await fetchAll();
   const results = await Promise.allSettled(
-    REGIONS.map(async (r) => {
-      const rows = await rowsForRegion(r);
+    REGIONS.map(async (r, i) => {
+      const data = forecasts[i];
+      if (!data) throw new Error(`${r.location}: no forecast returned`);
+      const rows = buildRows(r.location, data);
       // Replace this region's current-and-future window with the fresh forecast.
       await supabase
         .from('weather')
