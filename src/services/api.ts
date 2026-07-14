@@ -966,9 +966,9 @@ const CROP_DB_TO_APP: Record<string, CropType> = {
 const CROP_APP_TO_DB: Partial<Record<CropType, string>> = {
   'oil-palm': 'palm_oil',
 };
-const toCropType = (dbCrop: string): CropType =>
+export const toCropType = (dbCrop: string): CropType =>
   CROP_DB_TO_APP[dbCrop] ?? (dbCrop as CropType);
-const toDbCrop = (crop: string): string =>
+export const toDbCrop = (crop: string): string =>
   CROP_APP_TO_DB[crop as CropType] ?? crop;
 
 const mapCommodity = (row: CommodityRow): Commodity => ({
@@ -1020,7 +1020,7 @@ const writeMockUser = (user: AuthenticatedUser | null): void => {
 };
 
 /** Turn a display name into a stable commodity slug ("Yellow Maize" → "yellow_maize"). */
-const slugify = (value: string): string =>
+export const slugify = (value: string): string =>
   value
     .toLowerCase()
     .trim()
@@ -1028,7 +1028,7 @@ const slugify = (value: string): string =>
     .replace(/^_+|_+$/g, '');
 
 /** Last 10 digits — tolerant of `+234`, spaces, and leading-zero variants. */
-const phoneKey = (phone: string): string => normalizePhone(phone).slice(-10);
+export const phoneKey = (phone: string): string => normalizePhone(phone).slice(-10);
 
 // Supabase Auth is email/password; the app's UX is phone + 4-digit PIN. Map a
 // phone to a deterministic synthetic email and derive a >=6-char password from
@@ -1041,7 +1041,7 @@ const pinToPassword = (pin: string): string => `ojafarm-${pin}`;
 
 /** The Supabase login email for an identifier: a real email as-is, else the
  * synthetic phone email. Lets users sign in with either email or phone. */
-const identifierToEmail = (identifier: string): string =>
+export const identifierToEmail = (identifier: string): string =>
   identifier.includes('@')
     ? identifier.trim().toLowerCase()
     : phoneToEmail(identifier);
@@ -1215,7 +1215,7 @@ const mapInquiry = (row: SupplierInquiryRow): SupplierInquiry => ({
 });
 
 /** Collapse per-location commodity rows into one CommodityPrice per crop. */
-const aggregatePrices = (rows: PriceRow[]): CommodityPrice[] => {
+export const aggregatePrices = (rows: PriceRow[]): CommodityPrice[] => {
   const byCrop = new Map<string, Map<string, PriceRow[]>>();
   for (const row of rows) {
     const dates = byCrop.get(row.crop_type) ?? new Map<string, PriceRow[]>();
@@ -1255,7 +1255,7 @@ const aggregatePrices = (rows: PriceRow[]): CommodityPrice[] => {
   return result.sort((a, b) => a.label.localeCompare(b.label));
 };
 
-const buildForecast = (
+export const buildForecast = (
   region: RegionId,
   rows: WeatherRow[],
 ): WeatherForecast => {
