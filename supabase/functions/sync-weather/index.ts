@@ -145,30 +145,36 @@ Deno.serve(async (req) => {
 
   const today = new Date().toISOString().slice(0, 10);
   const forecasts = await fetchAll();
-  const results = await Promise.allSettled(
-    REGIONS.map(async (r, i) => {
-      const data = forecasts[i];
-      if (!data) throw new Error(`${r.location}: no forecast returned`);
-      const rows = buildRows(r.location, data);
-      // Replace this region's current-and-future window with the fresh forecast.
-      await supabase
-        .from('weather')
-        .delete()
-        .eq('location', r.location)
-        .gte('date', today);
-      const { error } = await supabase.from('weather').insert(rows);
-      if (error) throw new Error(`${r.location}: ${error.message}`);
-      return r.location;
-    }),
+
+  const covered = REGIONS.filter((_, i) => forecasts[i]).map((r) => r.location);
+  const rows = REGIONS.flatMap((r, i) =>
+    forecasts[i] ? buildRows(r.location, forecasts[i]) : [],
   );
 
-  const ok = results.filter((x) => x.status === 'fulfilled').length;
-  const failed = results
-    .filter((x): x is PromiseRejectedResult => x.status === 'rejected')
-    .map((x) => String(x.reason));
+  // Two DB calls total (one delete + one insert) so the whole run stays well
+  // within the scheduler's HTTP timeout: clear the current-and-future window
+  // for our regions, then write the fresh forecast.
+  const del = await supabase
+    .from('weather')
+    .delete()
+    .in('location', covered)
+    .gte('date', today);
+  if (del.error) {
+    return new Response(JSON.stringify({ error: del.error.message }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const ins = await supabase.from('weather').insert(rows);
+  if (ins.error) {
+    return new Response(JSON.stringify({ error: ins.error.message }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-  return new Response(JSON.stringify({ updated: ok, failed }), {
-    status: failed.length && !ok ? 502 : 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return new Response(
+    JSON.stringify({ updated: covered.length, rows: rows.length }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  );
 });

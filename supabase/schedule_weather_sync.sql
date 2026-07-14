@@ -28,7 +28,8 @@ select cron.schedule(
       'Content-Type', 'application/json',
       'x-cron-secret', '<CRON_SECRET>'
     ),
-    body := '{}'::jsonb
+    body := '{}'::jsonb,
+    timeout_milliseconds := 30000  -- the function fetches + writes; 5s (default) is too short
   );
   $$
 );
