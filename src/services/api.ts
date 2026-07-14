@@ -256,9 +256,16 @@ class MockApi implements AgroApi {
   /**
    * The last authenticated user — the mock has no server session, so writes that
    * are "owned by the current user" (e.g. new listings) read their identity here.
-   * The real backend uses `auth.uid()`.
+   * Restored from localStorage so it survives a reload. The real backend uses
+   * `auth.uid()`.
    */
-  private currentUser: AuthenticatedUser | null = null;
+  private currentUser: AuthenticatedUser | null = readMockUser();
+
+  private remember(user: AuthenticatedUser): AuthenticatedUser {
+    this.currentUser = user;
+    writeMockUser(user);
+    return user;
+  }
 
   private async respond<T>(value: T, latencyOverride?: number): Promise<T> {
     await delay(latencyOverride ?? this.latency);
@@ -280,7 +287,7 @@ class MockApi implements AgroApi {
         users.find(
           (u) => normalizePhone(u.phone) === phone && u.role === payload.role,
         ) ?? users.find((u) => u.role === payload.role);
-      return (this.currentUser = {
+      return this.remember({
         id: profile?.id ?? 'u0',
         name: profile?.name ?? demo.name,
         role: demo.role,
@@ -292,7 +299,7 @@ class MockApi implements AgroApi {
 
     const account = findAccount(payload.phone, payload.role);
     if (account && account.pin === payload.pin) {
-      return (this.currentUser = {
+      return this.remember({
         id: account.id,
         name: account.name,
         role: account.role,
@@ -333,7 +340,7 @@ class MockApi implements AgroApi {
       interests: payload.interests,
     });
 
-    return (this.currentUser = {
+    return this.remember({
       id: account.id,
       name: account.name,
       role: account.role,
@@ -346,6 +353,7 @@ class MockApi implements AgroApi {
   // Mock/HTTP sessions live in the persisted client store — no server session.
   async logout(): Promise<void> {
     this.currentUser = null;
+    writeMockUser(null);
   }
   async restoreSession(): Promise<AuthenticatedUser | null> {
     return null;
@@ -978,6 +986,27 @@ const initials = (name: string): string =>
 
 /** Today's date as an ISO day string (YYYY-MM-DD). */
 const today = (): string => new Date().toISOString().slice(0, 10);
+
+// The mock backend has no server session, so it remembers the signed-in user in
+// localStorage — this survives a page reload so writes "owned by the current
+// user" (e.g. new listings) stay attributed. Mock/dev only.
+const MOCK_USER_KEY = 'agrotech-mock-user';
+const readMockUser = (): AuthenticatedUser | null => {
+  try {
+    const raw = localStorage.getItem(MOCK_USER_KEY);
+    return raw ? (JSON.parse(raw) as AuthenticatedUser) : null;
+  } catch {
+    return null;
+  }
+};
+const writeMockUser = (user: AuthenticatedUser | null): void => {
+  try {
+    if (user) localStorage.setItem(MOCK_USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(MOCK_USER_KEY);
+  } catch {
+    // best-effort
+  }
+};
 
 /** Turn a display name into a stable commodity slug ("Yellow Maize" → "yellow_maize"). */
 const slugify = (value: string): string =>

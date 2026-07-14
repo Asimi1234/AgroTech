@@ -14,6 +14,7 @@ import { CountUp } from '@/components/motion/CountUp';
 import { QuickLinks } from '@/components/dashboard/QuickLinks';
 import { useAsync } from '@/hooks/useAsync';
 import { api, isApiError } from '@/services/api';
+import { env } from '@/config/env';
 import { useAuthStore } from '@/store/authStore';
 import {
   categoryLabel,
@@ -337,8 +338,15 @@ export const SupplierDashboard = () => {
   );
 
   const profile = data?.[2] ?? null;
+  // Prod owns products by supplier auth id. In the mock backend the seed
+  // products are owned by supplier-profile ids that don't equal the logged-in
+  // user id, so fall back to matching by name there (dead branch in prod).
   const listings =
-    data?.[0].items.filter((p) => p.supplierId === user?.id) ?? [];
+    data?.[0].items.filter(
+      (p) =>
+        p.supplierId === user?.id ||
+        (env.useMockApi && p.supplierName === user?.name),
+    ) ?? [];
   const listingIds = new Set(listings.map((p) => p.id));
   const inquiries = (data?.[1] ?? []).filter((q) => listingIds.has(q.productId));
   const activeCount = listings.filter((p) => p.inStock).length;
