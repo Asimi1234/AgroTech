@@ -4,25 +4,19 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Spinner } from '@/components/ui/Spinner';
-import { Icon } from '@/components/ui/Icon';
 import { Logo } from '@/components/layout/Logo';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { api, isApiError } from '@/services/api';
 import { env } from '@/config/env';
 import { useAuthStore } from '@/store/authStore';
 import { demoCredentials } from '@/data/mockData';
-import { cn } from '@/lib/cn';
-import type { UserRole } from '@/types';
-
-const roleIds: UserRole[] = ['farmer', 'supplier', 'admin'];
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const setUser = useAuthStore((s) => s.setUser);
   const { t } = useTranslation('auth');
 
-  const [role, setRole] = useState<UserRole>('farmer');
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +27,7 @@ export const LoginPage = () => {
     setError(null);
     setSubmitting(true);
     try {
-      const user = await api.login({ phone, pin, role });
+      const user = await api.login({ identifier, pin });
       setUser(user);
       navigate('/dashboard', { replace: true });
     } catch (err) {
@@ -44,14 +38,6 @@ export const LoginPage = () => {
       );
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const fillDemo = () => {
-    const demo = demoCredentials.find((c) => c.role === role);
-    if (demo) {
-      setPhone(demo.phone);
-      setPin(demo.pin);
     }
   };
 
@@ -77,48 +63,13 @@ export const LoginPage = () => {
             <p className="mt-1 text-sm text-slate-600">{t('login.subtitle')}</p>
 
             <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-              <fieldset>
-                <legend className="mb-2 text-sm font-semibold text-slate-800">
-                  {t('iAmA')}
-                </legend>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  {roleIds.map((id) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setRole(id)}
-                      aria-pressed={role === id}
-                      className={cn(
-                        'focus-ring rounded-lg border-2 p-3 text-left transition-colors',
-                        role === id
-                          ? 'border-brand-700 bg-brand-50'
-                          : 'border-earth-200 hover:border-brand-300',
-                      )}
-                    >
-                      <span className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">
-                          {t(`roles.${id}`)}
-                        </span>
-                        {role === id && (
-                          <Icon name="verified" className="h-4 w-4 text-brand-700" />
-                        )}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-slate-500">
-                        {t(`roles.${id}Desc`)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
               <Input
-                label={t('phone')}
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel"
-                placeholder={t('login.phonePlaceholder')}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                label={t('login.identifier')}
+                type="text"
+                autoComplete="username"
+                placeholder={t('login.identifierPlaceholder')}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 required
               />
               <div>
@@ -127,6 +78,7 @@ export const LoginPage = () => {
                   type="password"
                   inputMode="numeric"
                   autoComplete="current-password"
+                  maxLength={6}
                   placeholder={t('login.pinPlaceholder')}
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
@@ -167,19 +119,22 @@ export const LoginPage = () => {
                 <p className="text-xs font-semibold text-slate-700">
                   {t('login.demoTitle')}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {demoCredentials.find((c) => c.role === role)?.phone} —{' '}
-                  {t(`roles.${role}`)}
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  type="button"
-                  onClick={fillDemo}
-                >
-                  {t('login.fillDemo')}
-                </Button>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {demoCredentials.map((c) => (
+                    <Button
+                      key={c.role}
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        setIdentifier(c.phone);
+                        setPin(c.pin);
+                      }}
+                    >
+                      {t(`roles.${c.role}`)}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
 

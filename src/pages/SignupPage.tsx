@@ -31,6 +31,7 @@ interface FormState {
   region: string;
   interests: string[];
   phone: string;
+  email: string;
   pin: string;
   confirmPin: string;
 }
@@ -43,6 +44,7 @@ const initialForm: FormState = {
   region: '',
   interests: [],
   phone: '',
+  email: '',
   pin: '',
   confirmPin: '',
 };
@@ -57,7 +59,10 @@ const validateStep = (step: number, form: FormState): FieldErrors => {
   if (step === 3) {
     const digits = form.phone.replace(/\D/g, '');
     if (!/^0\d{10}$/.test(digits)) errors.phone = 'signup.errPhone';
-    if (!/^\d{4}$/.test(form.pin)) errors.pin = 'signup.errPin';
+    const email = form.email.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      errors.email = 'signup.errEmail';
+    if (!/^\d{6}$/.test(form.pin)) errors.pin = 'signup.errPin';
     if (form.confirmPin !== form.pin) errors.confirmPin = 'signup.errConfirm';
   }
   return errors;
@@ -127,6 +132,7 @@ export const SignupPage = () => {
       const user = await api.register({
         name: form.name,
         phone: form.phone,
+        email: form.email.trim() || undefined,
         pin: form.pin,
         role: form.role,
         region: form.region as RegionId,
@@ -331,6 +337,16 @@ export const SignupPage = () => {
                     error={errors.phone ? t(errors.phone) : undefined}
                     autoFocus
                   />
+                  <Input
+                    label={t('signup.email')}
+                    type="email"
+                    autoComplete="email"
+                    placeholder={t('signup.emailPlaceholder')}
+                    hint={t('signup.emailHint')}
+                    value={form.email}
+                    onChange={(e) => update('email', e.target.value)}
+                    error={errors.email ? t(errors.email) : undefined}
+                  />
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Input
                       label={t('signup.createPin')}
@@ -338,7 +354,7 @@ export const SignupPage = () => {
                       inputMode="numeric"
                       autoComplete="new-password"
                       placeholder={t('signup.pinPlaceholder')}
-                      maxLength={4}
+                      maxLength={6}
                       value={form.pin}
                       onChange={(e) => update('pin', e.target.value)}
                       error={errors.pin ? t(errors.pin) : undefined}
@@ -349,7 +365,7 @@ export const SignupPage = () => {
                       inputMode="numeric"
                       autoComplete="new-password"
                       placeholder={t('signup.confirmPinPlaceholder')}
-                      maxLength={4}
+                      maxLength={6}
                       value={form.confirmPin}
                       onChange={(e) => update('confirmPin', e.target.value)}
                       error={errors.confirmPin ? t(errors.confirmPin) : undefined}

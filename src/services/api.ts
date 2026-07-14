@@ -17,7 +17,7 @@ import {
   users,
   weatherForecasts,
 } from '@/data/mockData';
-import { addAccount, findAccount, phoneTaken } from './mockAccounts';
+import { addAccount, emailTaken, findByIdentifier, phoneTaken } from './mockAccounts';
 import { supabase, supabaseConfigured } from './supabase';
 import type {
   Advisory,
@@ -88,14 +88,16 @@ export interface Paginated<T> {
 }
 
 export interface LoginPayload {
-  phone: string;
+  /** Email or phone number — the account is resolved from whichever is given. */
+  identifier: string;
   pin: string;
-  role: UserRole;
 }
 
 export interface RegisterPayload {
   name: string;
   phone: string;
+  /** Optional real email; when given it becomes the login identity + enables reset. */
+  email?: string;
   pin: string;
   role: 'farmer' | 'supplier';
   region: RegionId;
@@ -274,31 +276,32 @@ class MockApi implements AgroApi {
 
   async login(payload: LoginPayload): Promise<AuthenticatedUser> {
     await delay(this.latency);
-    const phone = normalizePhone(payload.phone);
+    const { identifier, pin } = payload;
+    const phone = normalizePhone(identifier);
 
-    const demo = demoCredentials.find(
-      (c) =>
-        normalizePhone(c.phone) === phone &&
-        c.pin === payload.pin &&
-        c.role === payload.role,
-    );
-    if (demo) {
-      const profile =
-        users.find(
-          (u) => normalizePhone(u.phone) === phone && u.role === payload.role,
-        ) ?? users.find((u) => u.role === payload.role);
-      return this.remember({
-        id: profile?.id ?? 'u0',
-        name: profile?.name ?? demo.name,
-        role: demo.role,
-        phone: profile?.phone ?? payload.phone,
-        region: profile?.region ?? 'oyo',
-        avatarInitials: profile?.avatarInitials ?? 'AG',
-      });
+    // Demo accounts are phone-based.
+    if (!identifier.includes('@')) {
+      const demo = demoCredentials.find(
+        (c) => normalizePhone(c.phone) === phone && c.pin === pin,
+      );
+      if (demo) {
+        const profile =
+          users.find(
+            (u) => normalizePhone(u.phone) === phone && u.role === demo.role,
+          ) ?? users.find((u) => u.role === demo.role);
+        return this.remember({
+          id: profile?.id ?? 'u0',
+          name: profile?.name ?? demo.name,
+          role: demo.role,
+          phone: profile?.phone ?? identifier,
+          region: profile?.region ?? 'oyo',
+          avatarInitials: profile?.avatarInitials ?? 'AG',
+        });
+      }
     }
 
-    const account = findAccount(payload.phone, payload.role);
-    if (account && account.pin === payload.pin) {
+    const account = findByIdentifier(identifier);
+    if (account && account.pin === pin) {
       return this.remember({
         id: account.id,
         name: account.name,
@@ -312,7 +315,7 @@ class MockApi implements AgroApi {
     const error: ApiError = {
       status: 401,
       message:
-        'Invalid phone, PIN, or role. Check your details or create an account.',
+        'Invalid email/phone or PIN. Check your details or create an account.',
     };
     throw error;
   }
@@ -330,10 +333,18 @@ class MockApi implements AgroApi {
       };
       throw error;
     }
+    if (payload.email?.trim() && emailTaken(payload.email)) {
+      const error: ApiError = {
+        status: 409,
+        message: 'An account with this email already exists.',
+      };
+      throw error;
+    }
 
     const account = addAccount({
       name: payload.name,
       phone: payload.phone,
+      email: payload.email,
       pin: payload.pin,
       role: payload.role,
       region: payload.region,
@@ -1028,6 +1039,13 @@ const phoneToEmail = (phone: string): string =>
   `${phoneKey(phone)}@ojafarm.local`;
 const pinToPassword = (pin: string): string => `ojafarm-${pin}`;
 
+/** The Supabase login email for an identifier: a real email as-is, else the
+ * synthetic phone email. Lets users sign in with either email or phone. */
+const identifierToEmail = (identifier: string): string =>
+  identifier.includes('@')
+    ? identifier.trim().toLowerCase()
+    : phoneToEmail(identifier);
+
 const guessCategory = (name: string, description: string): ProductCategory => {
   const s = `${name} ${description}`.toLowerCase();
   if (/seed|cutting|seedling|stem|sapling/.test(s)) return 'seed';
@@ -1362,19 +1380,18 @@ class SupabaseApi implements AgroApi {
   }
 
   async login(payload: LoginPayload): Promise<AuthenticatedUser> {
-    debug('login', payload.role);
-    const email = phoneToEmail(payload.phone);
+    debug('login');
+    const email = identifierToEmail(payload.identifier);
     const password = pinToPassword(payload.pin);
 
     let result = await supabase.auth.signInWithPassword({ email, password });
 
-    // First-time demo login: provision the Auth account, then retry.
-    if (result.error) {
+    // First-time demo login (by phone): provision the Auth account, then retry.
+    if (result.error && !payload.identifier.includes('@')) {
       const demo = demoCredentials.find(
         (c) =>
-          phoneKey(c.phone) === phoneKey(payload.phone) &&
-          c.pin === payload.pin &&
-          c.role === payload.role,
+          phoneKey(c.phone) === phoneKey(payload.identifier) &&
+          c.pin === payload.pin,
       );
       if (demo) {
         await this.ensureDemoAccount(demo, email, password);
@@ -1386,7 +1403,7 @@ class SupabaseApi implements AgroApi {
     if (result.error || !authUser) this.unauthorized();
 
     const profile = await this.profileFor(authUser!.id);
-    if (!profile || profile.role !== payload.role) {
+    if (!profile) {
       await supabase.auth.signOut();
       this.unauthorized();
     }
@@ -1395,7 +1412,11 @@ class SupabaseApi implements AgroApi {
 
   async register(payload: RegisterPayload): Promise<AuthenticatedUser> {
     debug('register', payload.role);
-    const email = phoneToEmail(payload.phone);
+    // Real email becomes the login identity (and enables reset); otherwise fall
+    // back to the synthetic phone email so phone-only users still work.
+    const email = payload.email?.trim()
+      ? payload.email.trim().toLowerCase()
+      : phoneToEmail(payload.phone);
     const password = pinToPassword(payload.pin);
     const conflict = (): never =>
       fail({ message: 'An account with this phone number already exists.' }, 409);

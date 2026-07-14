@@ -4,6 +4,8 @@ export interface StoredAccount {
   id: string;
   name: string;
   phone: string;
+  /** Optional real email; when present the account can log in with it. */
+  email?: string;
   pin: string;
   role: UserRole;
   region: RegionId;
@@ -42,19 +44,26 @@ export const phoneTaken = (phone: string): boolean => {
   return loadAccounts().some((account) => account.phone === target);
 };
 
-export const findAccount = (
-  phone: string,
-  role: UserRole,
-): StoredAccount | undefined => {
-  const target = normalizePhone(phone);
-  return loadAccounts().find(
-    (account) => account.phone === target && account.role === role,
-  );
+export const emailTaken = (email: string): boolean => {
+  const target = email.trim().toLowerCase();
+  return loadAccounts().some((account) => account.email === target);
+};
+
+/** Look up an account by email (identifier contains '@') or phone. */
+export const findByIdentifier = (identifier: string): StoredAccount | undefined => {
+  const accounts = loadAccounts();
+  if (identifier.includes('@')) {
+    const target = identifier.trim().toLowerCase();
+    return accounts.find((account) => account.email === target);
+  }
+  const target = normalizePhone(identifier);
+  return accounts.find((account) => account.phone === target);
 };
 
 interface NewAccount {
   name: string;
   phone: string;
+  email?: string;
   pin: string;
   role: UserRole;
   region: RegionId;
@@ -67,6 +76,7 @@ export const addAccount = (input: NewAccount): StoredAccount => {
     id: `acct-${Date.now()}-${accounts.length + 1}`,
     name: input.name.trim(),
     phone: normalizePhone(input.phone),
+    email: input.email?.trim().toLowerCase() || undefined,
     pin: input.pin,
     role: input.role,
     region: input.region,
